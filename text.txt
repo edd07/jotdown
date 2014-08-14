@@ -14,3 +14,22 @@ Another list of things:
 1. Number one
 2. Number two
 3. Number three
+
+A block of code:
+
+```
+This is computer code...
+
+...with an empty line in the middle
+```
+
+A Heading With
+a Line Break
+==============
+
+And a sub-
+heading too
+-----------
+
+A multi-line
+paragraph
