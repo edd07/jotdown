@@ -5,28 +5,42 @@ re_flags = UNICODE
 re_ulistitem = compile(r'^\*\s*', flags=re_flags)
 re_olistitem = compile(r'^\d+\.\s*', flags=re_flags)
 re_code_delim = compile(r'^```\s*$', flags=re_flags)
+re_math_open = compile(r'^«««\s*$', flags=re_flags)
+re_math_close = compile(r'^»»»\s*$', flags=re_flags)
 
 # Token definitions for text parsing
 
-tokens = [
-	(r'\b`', 'CODE_OPEN'),
-    (r'[^\\]`\b', 'CODE_CLOSE'),
+text_tokens = [
+	(r'`', 'CodeInline_AMB'),
 
-    (r'\b**', 'STRONG_OPEN'),
-    (r'**\b', 'STRONG_CLOSE'),
-    (r'\b__', 'STRONG_OPEN'),
-    (r'__\b', 'STRONG_CLOSE'),
+    (r'\*\*', 'Strong_AMB'),
+    (r'\b__', 'Strong_AMB'),
 
-    (r'\b*', 'EMPH_OPEN'),
-    (r'*\b', 'EMPH_CLOSE'),
-    (r'\b_', 'EMPH_OPEN'),
-    (r'_\b', 'EMPH_CLOSE'),
+    (r'\*', 'Emph_AMB'),
+    (r'\b_', 'Emph_AMB'),
 
-	(r'\B*\b', 'NORMAL')
+    (r'«', 'MathInline_OPEN'),
+    (r'»', 'MathInline_CLOSE'),
+
+	(r'(?:[^_\*`«»]|\\[^_\*`«»])+', 'Plaintext')
 
 ]
 
-tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in tokens]
+math_tokens = [
+	(r'\B_(\w+)', 'Subscript'),
+    (r'\B\^(\w+)', 'Superscript'),
+	(r'\b([^\W_]+)', 'Identifier'),
+	(r'([\+\-\*/%])', 'Operator'),
+	(r'([^\^_\+\-\*/%]*)', 'Plaintext')
+]
+
+# Tokens that disable text parsing : Until this is encountered, yield this token
+disabling_tokens = {
+	'CodeInline_AMB': ('`', 'Plaintext'),
+    'MathInline_OPEN': ('»', 'Math')
+}
+
+text_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in text_tokens]
 
 
 def get_blocks(file):
@@ -48,15 +62,46 @@ def get_blocks(file):
 		yield block
 
 
-def get_tokens(text):
+def get_text_tokens(text):
+	disabled = False
+	enabling_char = ''
+	disabled_token = ''
 	while text:
-		for exp, val in tokens:
+
+		if disabled:
+			m = match(r'[^%s]*' % enabling_char, text)
+			yield disabled_token, m.group(0)
+
+			text = text[len(m.group(0)):]
+			disabled = False
+		else:
+			for exp, val in text_tokens:
+				m = match(exp, text)
+
+				if m:
+					m_len = len(m.group(0))
+
+					if val in disabling_tokens:
+						disabled = True
+						enabling_char, disabled_token = disabling_tokens[val]
+
+					yield val, m.group(0)
+
+					text = text[m_len:]
+					break
+			else:
+				raise Exception("Unrecognized token at %s" % text[:50])
+
+
+def get_math_tokens(text):
+	while text:
+		for exp, val in math_tokens:
 			m = match(exp, text)
 
 			if m:
-				m_len = len(m.group[0])
+				m_len = len(m.group(0))
 
-				yield val, m.group[0]
+				yield val, m.group(1)
 
 				text = text[m_len:]
 				break
@@ -94,6 +139,10 @@ def block_is_olist(block):
 
 def block_is_code(block):
 	return match(re_code_delim, block[0]) and match(re_code_delim, block[-1])
+
+
+def block_is_math(block):
+	return match(re_math_open, block[0]) and match(re_math_close, block[-1])
 
 
 def ulist_item_text(item):

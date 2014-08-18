@@ -1,5 +1,6 @@
 # Abstract ---------------------------------
 
+
 class Node():
 	def __init__(self, children=None):
 		self.children = children if children else []
@@ -10,7 +11,11 @@ class TextNode(Node):
 		super().__init__(children)
 		self.text = text
 
+	def emit_html(self):
+		return self.text
+
 # For blocks ----------------------------------
+
 
 class Document(Node):
 	def emit_html(self):
@@ -21,14 +26,14 @@ class Document(Node):
 		return res
 
 
-class Heading(TextNode):
+class Heading(Node):
 	def emit_html(self):
-		return "<h1>" + '<br>'.join(self.text) + "</h1>"
+		return "<h1>" + '<br>'.join(i.emit_html() for i in self.children) + "</h1>"
 
 
-class Subheading(TextNode):
+class Subheading(Node):
 	def emit_html(self):
-		return "<h2>" + '<br>'.join(self.text) + "</h2>"
+		return "<h2>" + '<br>'.join(i.emit_html() for i in self.children) + "</h2>"
 
 
 class UList(Node):
@@ -54,28 +59,72 @@ class ListItem(TextNode):
 		return "<li>" + self.text + "</li>"
 
 
-class Paragraph(TextNode):
+class Paragraph(Node):
 	def emit_html(self):
-		return "<p>" + "<br>".join(self.text) + "</p>"
+		return "<p>" + "<br>".join(i.emit_html() for i in self.children) + "</p>"
 
 
-class CodeBlock(TextNode):
+class CodeBlock(Node):
 	def emit_html(self):
-		return "<pre><code>" + ''.join(self.text) + "</code></pre>"
+		return "<pre><code>" + ''.join(i.emit_html() for i in self.children) + "</code></pre>"
+
+
+class MathBlock(Node):
+	def emit_html(self):
+		return "<blockquote>" + "<br>".join(i.emit_html() for i in self.children) + "</blockquote>"
+
+
+class Text(Node):
+	def emit_html(self):
+		return ''.join(i.emit_html() for i in self.children)
+
+
+class Math(Text):
+	pass
 
 
 # For text -------------------------
 
-class CodeInline(TextNode):
+class Plaintext(TextNode):
+	pass
+
+
+class CodeInline(Node):
 	def emit_html(self):
-		return "<code>" + ''.join(self.text) + "</code>"
+		return "<code>" + ''.join(i.emit_html() for i in self.children) + "</code>"
 
 
-class Emph(TextNode):
+class Emph(Node):
 	def emit_html(self):
-		return "<em>" + ''.join(self.text) + "</em>"
+		return "<em>" + ''.join(i.emit_html() for i in self.children) + "</em>"
 
 
-class Strong(TextNode):
+class Strong(Node):
 	def emit_html(self):
-		return "<strong>" + ''.join(self.text) + "</strong>"
+		return "<strong>" + ''.join(i.emit_html() for i in self.children) + "</strong>"
+
+
+# MATH -------------------
+
+class MathInline(Node):
+	def emit_html(self):
+		return "<q>" + ''.join(i.emit_html() for i in self.children) + "</q>"
+
+
+class Subscript(TextNode):
+	def emit_html(self):
+		return "<sub>" + self.text + "</sub>"
+
+
+class Superscript(TextNode):
+	def emit_html(self):
+		return "<sup>" + self.text + "</sup>"
+
+
+class Identifier(TextNode):
+	def emit_html(self):
+		return "<strong>" + self.text + "</strong>"
+
+
+class Operator(TextNode):
+	pass
