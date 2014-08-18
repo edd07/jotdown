@@ -1,0 +1,50 @@
+html {
+background-color: #eee8d5;
+}
+
+body {
+font-family: helvetica, arial, sans-serif;
+font-size: 12pt;
+margin: 0 auto 0 auto;
+width: 900px;
+background-color: #fdf6e3;
+padding: 16px;
+color: #657b83;
+}
+
+h1, h2 {
+font-weight: bold;
+color: #b58900;
+}
+
+h2 {
+color: #cb4b16;
+font-weight: normal;
+}
+
+blockquote, q {
+background-color: #eee8d5;
+font-family: georgia, times, serif;
+padding: 5px;
+}
+
+q, code {
+border-radius = 2.0;
+}
+
+blockquote, pre code {
+width: 100%;
+display: block;
+margin: 0 -16px 0 -16px;
+padding: 16px;
+border-radius:0;
+}
+
+code {
+font-family: inconsolata, courier, monospace;
+}
+
+pre code {
+background-color: #002b36;
+color: #839496;
+}

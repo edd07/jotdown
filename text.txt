@@ -39,6 +39,9 @@ There are also alternate tokens for _italics_ and __bold__
 This is an equation inline «a^2 + b^2 = c^2»
 
 «««
-This is a block of math equations
+# This is a block of math equations
 a^2 + b^2 = c^2
+A -> B # This one has a comment # PHI(0) <= 4 # and then another equation
+P != NP
+1 < 2
 »»»

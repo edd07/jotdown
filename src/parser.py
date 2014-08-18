@@ -1,6 +1,6 @@
 from func import *
 from classes import *
-
+import sys
 
 def parse(file):
 	# Block-level "parser"
@@ -18,20 +18,20 @@ def parse(file):
 		elif block_is_ulist(block):
 			items = []
 			for line in block:
-				items.append(ListItem(ulist_item_text(line)))
+				items.append(ListItem([parse_text(ulist_item_text(line))]))
 			nodes.append(UList(items))
 
 		elif block_is_olist(block):
 			items = []
 			for line in block:
-				items.append(ListItem(olist_item_text(line)))
+				items.append(ListItem([parse_text(olist_item_text(line))]))
 			nodes.append(OList(items))
 
 		elif block_is_code(block):
 			nodes.append(CodeBlock(map(Plaintext, block[1:-1])))
 
 		elif block_is_math(block):
-			nodes.append(MathBlock(map(parse_math, block[1:-1])))
+			nodes.append(MathBlock(map(parse_math, map(replace_math, block[1:-1]))))
 
 		else:
 			nodes.append(Paragraph(map(parse_text, block)))
@@ -65,7 +65,7 @@ def parse_text(text):
 						node_stack[-1].children.append(closed_node)
 						break
 					else:
-						raise Exception("Expected closing tag for %s, found %s", (tos_token, token))
+						raise Exception("Expected closing tag for %s, found %s" % (tos_token, token))
 				else:
 					raise Exception("Malformed document at %s" % text)
 
@@ -87,7 +87,7 @@ def parse_text(text):
 			node_stack[-1].children.append(Plaintext(text))
 
 		elif token == "Math":
-			node_stack[-1].children.append(parse_math(text))
+			node_stack[-1].children.append(parse_math(replace_math(text)))
 
 	return node_stack[0]
 
@@ -108,6 +108,12 @@ def parse_math(text):
 
 
 if __name__ == "__main__":
-	with open("text.txt", 'r') as f:
+
+	if len(sys.argv) > 1:
+		fname = sys.argv[1]
+	else:
+		fname = "text.txt"
+
+	with open(fname, 'r') as f:
 		doc = parse(f)
 		print(doc.emit_html())

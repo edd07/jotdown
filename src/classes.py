@@ -1,3 +1,5 @@
+import html
+
 # Abstract ---------------------------------
 
 
@@ -12,18 +14,19 @@ class TextNode(Node):
 		self.text = text
 
 	def emit_html(self):
-		return self.text
+		return html.escape(self.text, quote=True)
 
 # For blocks ----------------------------------
 
 
 class Document(Node):
 	def emit_html(self):
-		res = "<html><body>"
-		for block in self.children:
-			res += block.emit_html()
-		res += "<body></html>"
-		return res
+		with open("src/style.css") as style:
+			res = "<html><head><meta charset=\"UTF-8\"><style>%s</style></head><body>" % style.read()
+			for block in self.children:
+				res += block.emit_html()
+			res += "<body></html>"
+			return res
 
 
 class Heading(Node):
@@ -54,9 +57,9 @@ class OList(Node):
 		return res
 
 
-class ListItem(TextNode):
+class ListItem(Node):
 	def emit_html(self):
-		return "<li>" + self.text + "</li>"
+		return "<li>" + ''.join(i.emit_html() for i in self.children) + "</li>"
 
 
 class Paragraph(Node):
@@ -79,8 +82,9 @@ class Text(Node):
 		return ''.join(i.emit_html() for i in self.children)
 
 
-class Math(Text):
-	pass
+class Math(Node):
+	def emit_html(self):
+		return ''.join(i.emit_html() for i in self.children)
 
 
 # For text -------------------------
@@ -113,18 +117,23 @@ class MathInline(Node):
 
 class Subscript(TextNode):
 	def emit_html(self):
-		return "<sub>" + self.text + "</sub>"
+		return "<sub>" + html.escape(self.text, quote=True) + "</sub>"
 
 
 class Superscript(TextNode):
 	def emit_html(self):
-		return "<sup>" + self.text + "</sup>"
+		return "<sup>" + html.escape(self.text, quote=True) + "</sup>"
 
 
 class Identifier(TextNode):
 	def emit_html(self):
-		return "<strong>" + self.text + "</strong>"
+		return "<strong>" + html.escape(self.text, quote=True) + "</strong>"
 
 
 class Operator(TextNode):
-	pass
+	def emit_html(self):
+		return " %s " % html.escape(self.text, quote=True)
+
+class Comment(TextNode):
+	def emit_html(self):
+		return ' ' + html.escape(self.text, quote=True)
