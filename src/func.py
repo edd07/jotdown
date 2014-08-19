@@ -41,6 +41,7 @@ disabling_tokens = {
 }
 
 text_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in text_tokens]
+math_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in math_tokens]
 
 
 def get_blocks(file):
