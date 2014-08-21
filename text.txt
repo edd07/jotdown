@@ -36,6 +36,7 @@ paragraph
 
 Testing *italics*, **bold**, and `code_with * asterisk` and a variable_name
 There are also alternate tokens for _italics_ and __bold__
+This is **nested *italics* in bold**
 This is an equation inline «a^2 + b^2 = c^2»
 
 «««
