@@ -26,13 +26,19 @@ text_tokens = [
 
 ]
 
+math_exp = {
+	'op': r"\+\-\*/%=↔→←≈≠≤≥∈∉⊂⊄⊆⊈",
+    'num': r'\d',
+    'not_id': r'\W_\d'
+}
+
 math_tokens = [
 	(r'#\s*([^#\n]*)[#\n]', 'Comment'),
-	(r'_([\w()]+)\s*', 'Subscript'),
-    (r'\^([\w()]+)\s*', 'Superscript'),
-	(r'([^\W_\D]+)\s*', 'Identifier'),
-	(r'([\+\-\*/%=↔→←≈≠≤≥])\s*', 'Operator'),
-	(r'([^\s\^_\+\-\*/%#]+)\s*', 'Plaintext'),
+	(r'\B_([^%(not_id)s]+|[%(num)s]+)\s*', 'Subscript'),
+    (r'\B\^([^%(not_id)s]+|[%(num)s]+)\s*', 'Superscript'),
+	(r'\b([^%(not_id)s]+)\s*', 'Identifier'),
+	(r'([%(op)s])\s*' % math_exp, 'Operator'),
+	(r'([^\s\^_\+\-\*/%#]*)\s*', 'Plaintext'),
 	(r'(\s+)', 'Whitespace')
 ]
 
@@ -43,7 +49,7 @@ math_subst = {
 "DELTA": 'Δ',
 "EPSILON": 'Ε',
 "ZETA": 'Ζ',
-"[^ZH]ETA": 'Η',
+"[^ZH]ETA": 'Η',  # TODO: Change to lookbehind
 "THETA": 'Θ',
 "IOTA": 'Ι',
 "KAPPA": 'Κ',
@@ -67,7 +73,7 @@ math_subst = {
 "delta": 'δ',
 "epsilon": 'ε',
 "zeta": 'ζ',
-"eta": 'η',
+"eta": 'η',  # TODO: Change to lookbehind
 "theta": 'θ',
 "iota": 'ι',
 "kappa": 'κ',
@@ -93,7 +99,13 @@ math_subst = {
 "~": '∼',
 "!=": '≠',
 "<=": '≤',
-">=": '≥'
+">=": '≥',
+"€": '∈',
+"!€": '∉',
+"¢": '⊂',
+"!¢": '⊄',
+"¢=": '⊆',
+"!¢=": '⊈'
 
 }
 
