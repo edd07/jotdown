@@ -22,10 +22,14 @@ color: #cb4b16;
 font-weight: normal;
 }
 
-blockquote, q {
+blockquote {
 background-color: #eee8d5;
 font-family: georgia, times, serif;
 padding: 5px;
+}
+
+q {
+font-family: georgia, times, serif;
 quotes: none;
 }
 

@@ -27,87 +27,102 @@ text_tokens = [
 ]
 
 math_exp = {
-	'op': r"\+\-\*/%=↔→←≈≠≤≥∈∉⊂⊄⊆⊈",
+	'op': r"\+\-\*/%=↔→←~≈≠≟<≤≥>∈∉⊂⊄⊆⊈…!",
     'num': r'\d',
-    'not_id': r'\W_\d'
+    'not_id': r'\W_',
+    'parens': r'\(\)\{\}\[\]'
 }
 
 math_tokens = [
-	(r'#\s*([^#\n]*)[#\n]', 'Comment'),
-	(r'\B_([^%(not_id)s]+|[%(num)s]+)\s*', 'Subscript'),
-    (r'\B\^([^%(not_id)s]+|[%(num)s]+)\s*', 'Superscript'),
-	(r'\b([^%(not_id)s]+)\s*', 'Identifier'),
-	(r'([%(op)s])\s*' % math_exp, 'Operator'),
-	(r'([^\s\^_\+\-\*/%#]*)\s*', 'Plaintext'),
-	(r'(\s+)', 'Whitespace')
+	(r'(\^\()', "SuperscriptParens_OPEN"),
+    (r'(_\()', "SubscriptParens_OPEN"),
+	(r'(\()', "Parenthesis_OPEN"),
+    (r'(\))', "Parenthesis_CLOSE"),
+	(r'({)', "Braces_OPEN"),
+	(r'(})', "Braces_CLOSE"),
+    (r'(\[)', "Brackets_OPEN"),
+	(r'(\])', "Brackets_CLOSE"),
+
+	(r'#\s*([^#\n]*)[#\n$]', 'Comment'),
+	(r'_([^%(not_id)s]+|[%(num)s]+)' % math_exp, 'Subscript'),
+    (r'\^([^%(not_id)s]+|[%(num)s]+)' % math_exp, 'Superscript'),
+	(r'([%(op)s])' % math_exp, 'Operator'),
+	(r'(%(num)s[%(num)s\.]*)' % math_exp, 'Number'),
+	#(r'([^_\^%(op)]*)\s*', 'Plaintext'),
+    (r'([^%(not_id)s]+)' % math_exp, 'Identifier'),
+	(r'([^\S\n]+)', 'Whitespace'),
+	(r'(\n)', 'Newline')
 ]
 
-math_subst = {
-"ALPHA": 'Α',
-"BETA": 'Β',
-"GAMMA": 'Γ',
-"DELTA": 'Δ',
-"EPSILON": 'Ε',
-"ZETA": 'Ζ',
-"[^ZH]ETA": 'Η',  # TODO: Change to lookbehind
-"THETA": 'Θ',
-"IOTA": 'Ι',
-"KAPPA": 'Κ',
-"LAMBDA": 'Λ',
-"MU": 'Μ',
-"NU": 'Ν',
-"XI": 'Ξ',
-"OMICRON": 'Ο',
-"PI": 'Π',
-"RHO": 'Ρ',
-"SIGMA": 'Σ',
-"TAU": 'Τ',
-"YPSILON": 'Υ',
-"PHI": 'Φ',
-"CHI": 'Χ',
-"PSI": 'Ψ',
-"OMEGA": 'Ω',
-"alpha": 'α',
-"beta": 'β',
-"gamma": 'γ',
-"delta": 'δ',
-"epsilon": 'ε',
-"zeta": 'ζ',
-"eta": 'η',  # TODO: Change to lookbehind
-"theta": 'θ',
-"iota": 'ι',
-"kappa": 'κ',
-"lambda": 'λ',
-"mu": 'μ',
-"nu": 'ν',
-"xi": 'ξ',
-"omicron": 'ο',
-"pi": 'π',
-"rho": 'ρ',
-"sigma": 'σ',
-"tau": 'τ',
-"ypsilon": 'υ',
-"phi": 'φ',
-"chi": 'χ',
-"psi": 'ψ',
-"omega": 'ω',
+parens_closable = ["SubscriptParens", "SuperscriptParens"]
 
-"<->": '↔',
-"->": '→',
-"<-": '←',
-"~=": '≈',
-"~": '∼',
-"!=": '≠',
-"<=": '≤',
-">=": '≥',
-"€": '∈',
-"!€": '∉',
-"¢": '⊂',
-"!¢": '⊄',
-"¢=": '⊆',
-"!¢=": '⊈'
+math_subst = [
+(r"ALPHA", 'Α'),
+(r"BETA", 'Β'),
+(r"GAMMA", 'Γ'),
+(r"DELTA", 'Δ'),
+(r"EPSILON", 'Ε'),
+(r"ZETA", 'Ζ'),
+(r"[^ZH]ETA", 'Η'),  # TODO, Change to lookbehind
+(r"THETA", 'Θ'),
+(r"IOTA", 'Ι'),
+(r"KAPPA", 'Κ'),
+(r"LAMBDA", 'Λ'),
+(r"MU", 'Μ'),
+(r"NU", 'Ν'),
+(r"XI", 'Ξ'),
+(r"OMICRON", 'Ο'),
+(r"PI", 'Π'),
+(r"RHO", 'Ρ'),
+(r"SIGMA", 'Σ'),
+(r"TAU", 'Τ'),
+(r"YPSILON", 'Υ'),
+(r"PHI", 'Φ'),
+(r"CHI", 'Χ'),
+(r"PSI", 'Ψ'),
+(r"OMEGA", 'Ω'),
+(r"alpha", 'α'),
+(r"beta", 'β'),
+(r"gamma", 'γ'),
+(r"delta", 'δ'),
+(r"epsilon", 'ε'),
+(r"zeta", 'ζ'),
+(r"eta", 'η'),  # TODO, Change to lookbehind
+(r"theta", 'θ'),
+(r"iota", 'ι'),
+(r"kappa", 'κ'),
+(r"lambda", 'λ'),
+(r"mu", 'μ'),
+(r"nu", 'ν'),
+(r"xi", 'ξ'),
+(r"omicron", 'ο'),
+(r"pi", 'π'),
+(r"rho", 'ρ'),
+(r"sigma", 'σ'),
+(r"tau", 'τ'),
+(r"ypsilon", 'υ'),
+(r"phi", 'φ'),
+(r"chi", 'χ'),
+(r"psi", 'ψ'),
+(r"omega", 'ω'),
 
-}
+(r"<->", '↔'),
+(r"->", '→'),
+(r"<-", '←'),
+(r"~=", '≈'),
+(r"~", '∼'),
+(r"!=", '≠'),
+(r"\?=", '≟'),
+(r"<=", '≤'),
+(r">=", '≥'),
+(r"€", '∈'),
+(r"!€", '∉'),
+(r"¢=", '⊆'),
+(r"!¢=", '⊈'),
+(r"¢", '⊂'),
+(r"!¢", '⊄'),
+(r"\.\.\.", '…')
+]
 
 # Tokens that disable text parsing : Until this is encountered, yield this token
 disabling_tokens = {
@@ -118,7 +133,7 @@ disabling_tokens = {
 text_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in text_tokens]
 math_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in math_tokens]
 
-math_subst = {compile(exp, flags=re_flags): val for (exp, val) in math_subst.items()}
+math_subst = [(compile(exp, flags=re_flags), val) for (exp, val) in math_subst]
 
 
 def get_blocks(file):
@@ -197,7 +212,7 @@ def get_math_tokens(text):
 
 
 def replace_math(text):
-	for k, v in math_subst.items():
+	for k, v in math_subst:
 		text = sub(k, v, text)
 
 	return text

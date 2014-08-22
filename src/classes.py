@@ -115,6 +115,31 @@ class MathInline(Node):
 		return "<q>" + ''.join(i.emit_html() for i in self.children) + "</q>"
 
 
+class Parenthesis(Node):
+	def emit_html(self):
+		return "(" + ''.join(i.emit_html() for i in self.children) + ")"
+
+
+class Braces(Node):
+	def emit_html(self):
+		return "{" + ''.join(i.emit_html() for i in self.children) + "}"
+
+
+class Brackets(Node):
+	def emit_html(self):
+		return "[" + ''.join(i.emit_html() for i in self.children) + "]"
+
+
+class SuperscriptParens(Node):
+	def emit_html(self):
+		return "<sup>" + ''.join(i.emit_html() for i in self.children) + "</sup>"
+
+
+class SubscriptParens(Node):
+	def emit_html(self):
+		return "<sub>" + ''.join(i.emit_html() for i in self.children) + "</sub>"
+
+
 class Subscript(TextNode):
 	def emit_html(self):
 		return "<sub>" + html.escape(self.text, quote=True) + "</sub>"
@@ -127,7 +152,7 @@ class Superscript(TextNode):
 
 class Identifier(TextNode):
 	def emit_html(self):
-		return "<strong>" + html.escape(self.text, quote=True) + "</strong>"
+		return "<strong><em>" + html.escape(self.text, quote=True) + "</em></strong>"
 
 
 class Operator(TextNode):
@@ -138,3 +163,12 @@ class Operator(TextNode):
 class Comment(TextNode):
 	def emit_html(self):
 		return ' ' + html.escape(self.text, quote=True)
+
+
+class Number(TextNode):
+	pass
+
+
+class Newline(TextNode):
+	def emit_html(self):
+		return "<br>"

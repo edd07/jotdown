@@ -31,7 +31,7 @@ def parse(file):
 			nodes.append(CodeBlock(map(Plaintext, block[1:-1])))
 
 		elif block_is_math(block):
-			nodes.append(MathBlock(map(parse_math, map(replace_math, block[1:-1]))))
+			nodes.append(MathBlock([parse_math(replace_math('\n'.join(block[1:-1])))]))
 
 		else:
 			nodes.append(Paragraph(map(parse_text, block)))
@@ -97,11 +97,26 @@ def parse_math(text):
 	node_stack = [Math()]
 
 	for token, text in get_math_tokens(text):
-		node_class = globals()[token]
-
-		if token == 'FANCY TOKENS':
-			pass
+		if '_OPEN' in token:
+			node_class = globals()[token.split('_')[0]]
+			stack.append(token)
+			node_stack.append(node_class())
+		elif '_CLOSE' in token:
+			node, _ = token.split('_')
+			tos_token = stack[-1]
+			if '_' in tos_token:
+				tos_node, tos_type = tos_token.split('_')
+				if tos_node == node and tos_type == 'OPEN' \
+					or tos_node in parens_closable and tos_type == 'OPEN':
+					stack.pop()
+					closed_node = node_stack.pop()
+					node_stack[-1].children.append(closed_node)
+				else:
+					raise Exception("Expected closing math tag for %s, found %s" % (tos_token, token))
+			else:
+				raise Exception("Malformed document at %s" % text)
 		else:  # text tokens
+			node_class = globals()[token]
 			node_stack[-1].children.append(node_class(text))
 
 	return node_stack[0]
