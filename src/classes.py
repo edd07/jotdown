@@ -134,6 +134,7 @@ class Operator(TextNode):
 	def emit_html(self):
 		return " %s " % html.escape(self.text, quote=True)
 
+
 class Comment(TextNode):
 	def emit_html(self):
 		return ' ' + html.escape(self.text, quote=True)

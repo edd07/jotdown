@@ -27,12 +27,13 @@ text_tokens = [
 ]
 
 math_tokens = [
-	(r'#\s*([^#\n$]*)[#\n$]', 'Comment'),
-	(r'\B_(\w+)\s*', 'Subscript'),
-    (r'\B\^(\w+)\s*', 'Superscript'),
-	(r'\b([^\W_\d]+)\s*', 'Identifier'),
+	(r'#\s*([^#\n]*)[#\n]', 'Comment'),
+	(r'_([\w()]+)\s*', 'Subscript'),
+    (r'\^([\w()]+)\s*', 'Superscript'),
+	(r'([^\W_\D]+)\s*', 'Identifier'),
 	(r'([\+\-\*/%=↔→←≈≠≤≥])\s*', 'Operator'),
-	(r'([^\s\^_\+\-\*/%]*)\s*', 'Plaintext')
+	(r'([^\s\^_\+\-\*/%#]+)\s*', 'Plaintext'),
+	(r'(\s+)', 'Whitespace')
 ]
 
 math_subst = {
@@ -98,8 +99,8 @@ math_subst = {
 
 # Tokens that disable text parsing : Until this is encountered, yield this token
 disabling_tokens = {
-	'CodeInline_AMB': ('`', 'Plaintext'),
-    'MathInline_OPEN': ('»', 'Math')
+	'CodeInline_AMB': ('`', 'Plaintext', 'CodeInline_AMB'),
+    'MathInline_OPEN': ('»', 'Math', 'MathInline_CLOSE')
 }
 
 text_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in text_tokens]
@@ -135,11 +136,16 @@ def get_text_tokens(text):
 	disabled = False
 	enabling_char = ''
 	disabled_token = ''
+	closing_token = ''
 	while text:
 
 		if disabled:
-			m = match(r'[^%s]*' % enabling_char, text)
-			yield disabled_token, m.group(0)
+			m = match(r'([^%s]*)%s' % (enabling_char, enabling_char), text)
+			if not m:
+				raise Exception("Expected '%s' for unclosed tag in %s" % (enabling_char, repr(text[:50])))
+
+			yield disabled_token, m.group(1)
+			yield closing_token, enabling_char
 
 			text = text[len(m.group(0)):]
 			disabled = False
@@ -152,14 +158,13 @@ def get_text_tokens(text):
 
 					if val in disabling_tokens:
 						disabled = True
-						enabling_char, disabled_token = disabling_tokens[val]
+						enabling_char, disabled_token, closing_token = disabling_tokens[val]
 
 					yield val, m.group(0)
-
 					text = text[m_len:]
 					break
 			else:
-				raise Exception("Unrecognized token at %s" % text[:50])
+				raise Exception("Unrecognized token at %s" % repr(text[:50]))
 
 
 def get_math_tokens(text):
@@ -170,10 +175,13 @@ def get_math_tokens(text):
 			if m:
 				m_len = len(m.group(0))
 
-				yield val, m.group(1)
+				if val != 'Whitespace':
+					yield val, m.group(1)
 
 				text = text[m_len:]
 				break
+		else:
+			raise Exception("Unrecognized math token at %s" % repr(text[:50]))
 
 
 def replace_math(text):

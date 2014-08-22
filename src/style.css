@@ -26,6 +26,7 @@ blockquote, q {
 background-color: #eee8d5;
 font-family: georgia, times, serif;
 padding: 5px;
+quotes: none;
 }
 
 q, code {
@@ -47,4 +48,10 @@ font-family: inconsolata, courier, monospace;
 pre code {
 background-color: #002b36;
 color: #839496;
+}
+
+pre {
+-moz-tab-size: 4;
+-o-tab-size:   4;
+tab-size:4;
 }
