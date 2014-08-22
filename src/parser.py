@@ -46,6 +46,7 @@ def parse_text(text):
 	node_stack = [Text()]
 
 	for token, text in get_text_tokens(text):
+
 		if '_OPEN' in token or '_CLOSE' in token:
 			# General rule for NODE_OPEN or NODE_CLOSE tokens
 			node, type = token.split('_')
@@ -63,7 +64,6 @@ def parse_text(text):
 						stack.pop()
 						closed_node = node_stack.pop()
 						node_stack[-1].children.append(closed_node)
-						break
 					else:
 						raise Exception("Expected closing tag for %s, found %s" % (tos_token, token))
 				else:
