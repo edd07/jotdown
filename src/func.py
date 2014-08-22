@@ -22,12 +22,12 @@ text_tokens = [
     (r'«', 'MathInline_OPEN'),
     (r'»', 'MathInline_CLOSE'),
 
-	(r'(?:[^_\*`«»]|\\[^_\*`«»])+', 'Plaintext')
+	(r'(?:[^_\*`«»]|\\[^_\*`«»]|(?<=[^\W_])_(?=[^\W_]))*', 'Plaintext')
 
 ]
 
 math_exp = {
-	'op': r"\+\-\*/%=↔→←~≈≠≟<≤≥>∈∉⊂⊄⊆⊈…!",
+	'op': r"\+\*/%=↔→←≈∼≠≟<≤≥>∈∉⊂⊄⊆⊈…!±−",
     'num': r'\d',
     'not_id': r'\W_',
     'parens': r'\(\)\{\}\[\]'
@@ -36,11 +36,14 @@ math_exp = {
 math_tokens = [
 	(r'(\^\()', "SuperscriptParens_OPEN"),
     (r'(_\()', "SubscriptParens_OPEN"),
+    (r'(sum\()', "Sum_OPEN"),
+    (r'(prod\()', "Prod_OPEN"),
+    (r'(int\()', "Int_OPEN"),
 	(r'(\()', "Parenthesis_OPEN"),
     (r'(\))', "Parenthesis_CLOSE"),
 	(r'({)', "Braces_OPEN"),
 	(r'(})', "Braces_CLOSE"),
-    (r'(\[)', "Brackets_OPEN"),
+    (r'(\[)', "Brackets_OPEN"),  # Brackets are for grouping that won't show up in output
 	(r'(\])', "Brackets_CLOSE"),
 
 	(r'#\s*([^#\n]*)[#\n$]', 'Comment'),
@@ -54,7 +57,7 @@ math_tokens = [
 	(r'(\n)', 'Newline')
 ]
 
-parens_closable = ["SubscriptParens", "SuperscriptParens"]
+parens_closable = ["SubscriptParens", "SuperscriptParens", "Sum", "Prod", "Int"]
 
 math_subst = [
 (r"ALPHA", 'Α'),
@@ -106,6 +109,14 @@ math_subst = [
 (r"psi", 'ψ'),
 (r"omega", 'ω'),
 
+(r'NATURALS', 'ℕ'),
+(r'INTEGERS', 'ℤ'),
+(r'RATIONALS', 'ℚ'),
+(r'REALS', 'ℝ'),
+(r'COMPLEX', 'ℂ'),
+
+(r"ALEPH", 'ℵ'),
+
 (r"<->", '↔'),
 (r"->", '→'),
 (r"<-", '←'),
@@ -121,7 +132,9 @@ math_subst = [
 (r"!¢=", '⊈'),
 (r"¢", '⊂'),
 (r"!¢", '⊄'),
-(r"\.\.\.", '…')
+(r"\.\.\.", '…'),
+(r"\+-", '±'),
+(r"-", '−')
 ]
 
 # Tokens that disable text parsing : Until this is encountered, yield this token

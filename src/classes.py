@@ -119,6 +119,9 @@ class Parenthesis(Node):
 	def emit_html(self):
 		return "(" + ''.join(i.emit_html() for i in self.children) + ")"
 
+	def emit_mathml(self):
+		return "<mfenced open=\"(\" close=\")\"><mrow>" + ''.join(i.emit_mathml() for i in self.children) + "</mrow></mfenced>"
+
 
 class Braces(Node):
 	def emit_html(self):
@@ -127,46 +130,113 @@ class Braces(Node):
 
 class Brackets(Node):
 	def emit_html(self):
-		return "[" + ''.join(i.emit_html() for i in self.children) + "]"
+		return ''.join(i.emit_html() for i in self.children)
+
+	def emit_mathml(self):
+		return ''.join(i.emit_mathml() for i in self.children)
+
+
+class Sum(Node):
+	def emit_html(self):
+		#return "∑"
+		return """
+	<math><mrow>
+	<munderover>
+		<mo>&sum;</mo>
+		<mrow>%s</mrow><mrow>%s</mrow>
+	</munderover>
+	<mrow></mrow>
+	</mrow></math>
+	""" % (self.children[0].emit_mathml(),
+		   self.children[1].emit_mathml()) + ''.join(i.emit_html() for i in self.children[2:])
+
+
+class Prod(Node):
+	def emit_html(self):
+		# return "∏"
+		return """
+	<math><mrow>
+	<munderover>
+		<mo>&prod;</mo>
+		<mrow>%s</mrow><mrow>%s</mrow>
+	</munderover>
+	<mrow></mrow>
+	</mrow></math>
+	""" % (self.children[0].emit_mathml(),
+		   self.children[1].emit_mathml()) + ''.join(i.emit_html() for i in self.children[2:])
+
+
+class Int(Node):
+	def emit_html(self):
+		# return "∏"
+		return """
+	<math><mrow>
+	<munderover>
+		<mo>&int;</mo>
+		<mrow>%s</mrow><mrow>%s</mrow>
+	</munderover>
+	<mrow></mrow>
+	</mrow></math>
+	""" % (self.children[0].emit_mathml(),
+		   self.children[1].emit_mathml()) + ''.join(i.emit_html() for i in self.children[2:])
 
 
 class SuperscriptParens(Node):
 	def emit_html(self):
 		return "<sup>" + ''.join(i.emit_html() for i in self.children) + "</sup>"
 
+	def emit_mathml(self):
+		return "<msup><msrow></msrow><msrow>" + ''.join(i.emit_mathml() for i in self.children) + "</msrow></mssup>"
+
 
 class SubscriptParens(Node):
 	def emit_html(self):
 		return "<sub>" + ''.join(i.emit_html() for i in self.children) + "</sub>"
+
+	def emit_mathml(self):
+		return "<msub><msrow></msrow><msrow>" + ''.join(i.emit_mathml() for i in self.children) + "</msrow></mssub>"
 
 
 class Subscript(TextNode):
 	def emit_html(self):
 		return "<sub>" + html.escape(self.text, quote=True) + "</sub>"
 
+	def emit_mathml(self):
+		return "<msub><mrow></mrow><mrow>" + html.escape(self.text, quote=True) + "</mrow></mssub>"
+
 
 class Superscript(TextNode):
 	def emit_html(self):
 		return "<sup>" + html.escape(self.text, quote=True) + "</sup>"
+
+	def emit_mathml(self):
+		return "<msup><mrow></mrow><mrow>" + html.escape(self.text, quote=True) + "</mrow></mssup>"
 
 
 class Identifier(TextNode):
 	def emit_html(self):
 		return "<strong><em>" + html.escape(self.text, quote=True) + "</em></strong>"
 
+	def emit_mathml(self):
+		return "<mi>" + self.text + "</mi>"
+
 
 class Operator(TextNode):
 	def emit_html(self):
 		return " %s " % html.escape(self.text, quote=True)
 
+	def emit_mathml(self):
+		return "<mo>" + self.text + "</mo>"
+
 
 class Comment(TextNode):
 	def emit_html(self):
-		return ' ' + html.escape(self.text, quote=True)
+		return ' %s ' % html.escape(self.text, quote=True)
 
 
 class Number(TextNode):
-	pass
+	def emit_mathml(self):
+		return "<mn>" + self.text + "</mn>"
 
 
 class Newline(TextNode):
