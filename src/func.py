@@ -247,16 +247,9 @@ def block_is_subheading(block):
 	return True
 
 
-def block_is_ulist(block):
+def block_is_list(block):
 	for line in block:
-		if not match(re_ulistitem, line):
-			return False
-	return True
-
-
-def block_is_olist(block):
-	for line in block:
-		if not match(re_olistitem, line):
+		if not match(re_listitem, line):
 			return False
 	return True
 

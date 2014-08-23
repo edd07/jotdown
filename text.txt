@@ -7,12 +7,15 @@ Subheading
 List of things:
 
 * unnumbered
+	* nested unnumbered
 * unnumbered
 
 Another list of things:
 
 1. Number one
+	1. Number one nested
 2. Number two
+	* Nested unnumbered
 3. Number three
 
 A block of code:
@@ -55,6 +58,6 @@ A table with inline formatting:
 
 This column is left aligned						| Right	| Center
 ------------------------------------------------|------:|:--------------:
-`some code here`		    					| c1 	| n
-«SIGMA_2^n t_j # some math»						| c2 	| n-1
-Some *old*-__fashioned__ text               	| c3 	| 0
+`some code here`		    					| 200 	| center
+«SIGMA_2^n t_j # some math»						| 500	| aligned
+Some *old*-__fashioned__ text               	| 700 	| column

@@ -16,7 +16,7 @@ def parse(file):
 			text = block[:-1]
 			nodes.append(Subheading(map(parse_text, text)))
 
-		elif block_is_ulist(block) or block_is_olist(block):
+		elif block_is_list(block):
 			list_stack = []
 			indent = -1
 
@@ -32,6 +32,7 @@ def parse(file):
 					else:
 						list_stack.append(UList())
 				elif new_indent < indent:
+					indent = new_indent
 					closed_list = list_stack.pop()
 					list_stack[-1].children.append(closed_list)
 
