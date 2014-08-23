@@ -69,7 +69,7 @@ class Paragraph(Node):
 
 class CodeBlock(Node):
 	def emit_html(self):
-		return "<pre><code>" + ''.join(i.emit_html() for i in self.children) + "</code></pre>"
+		return "<pre><code class=\"console\">" + ''.join(i.emit_html() for i in self.children) + "</code></pre>"
 
 
 class MathBlock(Node):
@@ -87,6 +87,37 @@ class Math(Node):
 		return ''.join(i.emit_html() for i in self.children)
 
 
+class Table(Node):
+	def emit_html(self):
+		return "<table>" + ''.join(i.emit_html() for i in self.children) + "</table>"
+
+
+class TableRow(Node):
+	def emit_html(self):
+		return "<tr>" + ''.join(i.emit_html() for i in self.children) + "</tr>"
+
+
+class TableHeader(Node):
+	def emit_html(self):
+		return "<th>" + ''.join(i.emit_html() for i in self.children) + "</th>"
+
+
+class TableCell(Node):
+	align_map = {
+		0: 'left',
+	    1: 'center',
+	    2: 'right'
+	}
+
+	def __init__(self, align, children=None):
+		super().__init__(children=children)
+		self.align = align
+
+	def emit_html(self):
+		return "<td align=\"%s\">" % self.align_map[self.align] +\
+		       ''.join(i.emit_html() for i in self.children) + "</td>"
+
+
 # For text -------------------------
 
 class Plaintext(TextNode):
@@ -95,7 +126,7 @@ class Plaintext(TextNode):
 
 class CodeInline(Node):
 	def emit_html(self):
-		return "<code>" + ''.join(i.emit_html() for i in self.children) + "</code>"
+		return "<pre><code>" + ''.join(i.emit_html() for i in self.children) + "</code></pre>"
 
 
 class Emph(Node):

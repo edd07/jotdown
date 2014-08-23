@@ -47,7 +47,7 @@ math_tokens = [
     (r'(\[)', "Brackets_OPEN"),  # Brackets are for grouping that won't show up in output
 	(r'(\])', "Brackets_CLOSE"),
 
-	(r'#\s*([^#\n]*)[#\n$]', 'Comment'),
+	(r'#\s*([^#\n]*)(?:[#\n]|$)', 'Comment'),
 	(r'_([^%(not_id)s]+|[%(num)s]+)' % math_exp, 'Subscript'),
     (r'\^([^%(not_id)s]+|[%(num)s]+)' % math_exp, 'Superscript'),
 	(r'([%(op)s])' % math_exp, 'Operator'),
@@ -269,7 +269,30 @@ def block_is_math(block):
 	return match(re_math_open, block[0]) and match(re_math_close, block[-1])
 
 
+def block_is_md_table(block):
+	table_cols = len(block[0].split('|'))
+
+	if table_cols < 2:
+		return False
+
+	for line in block:
+		row_cols = len(line.split('|'))
+
+		if row_cols != table_cols:
+			return False
+	return True
+
+
 def list_item_text(item):
 	if match(re_olistitem, item):
 		return sub(re_olistitem, '', item)
 	return sub(re_ulistitem, '', item)
+
+
+def cell_align(cell):
+	if cell.endswith('-'):
+		return 0  # Left
+	elif cell.startswith('-'):
+		return 2  # Right
+	else:
+		return 1  # Center

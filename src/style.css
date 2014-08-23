@@ -20,6 +20,8 @@ color: #b58900;
 h2 *, h2 {
 color: #cb4b16 !important;
 font-weight: normal;
+font-family: helvetica, arial, sans-serif;
+font-style: normal;
 }
 
 blockquote {
@@ -37,7 +39,7 @@ blockquote, q , code {
 color: #586e75;
 }
 
-blockquote, pre code {
+blockquote, .console {
 width: 100%;
 display: block;
 margin: 0 -16px 0 -16px;
@@ -47,17 +49,22 @@ border-radius:0;
 
 code {
 font-family: inconsolata, courier, monospace;
+display: inline;
 }
 
-pre code {
+.console {
 background-color: #002b36;
 color: #839496;
 }
 
 pre {
+display: inline;
 -moz-tab-size: 4;
 -o-tab-size:   4;
 tab-size:4;
+font-size: 12pt;
+padding:0;
+margin:0;
 }
 
 ul {
@@ -70,4 +77,22 @@ color: #d33682;
 
 li span {
 color: #657b83;
+}
+
+table {
+margin: auto;
+}
+
+table, td, th {
+border-collapse: collapse;
+border: 1px solid #6c71c4;
+}
+
+td, th {
+padding: 5px;
+}
+
+th {
+background-color: #6c71c4;
+color: #fdf6e3 !important;
 }

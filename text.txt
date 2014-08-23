@@ -50,3 +50,11 @@ sum([j=2] n j) = (n*(n+1)/2) + 1
 prod([i=1] 4 i) = 24
 F(b) - F(a) = int(a b [f(x) dx])
 »»»
+
+A table with inline formatting:
+
+This column is left aligned						| Right	| Center
+------------------------------------------------|------:|:--------------:
+`some code here`		    					| c1 	| n
+«SIGMA_2^n t_j # some math»						| c2 	| n-1
+Some *old*-__fashioned__ text               	| c3 	| 0

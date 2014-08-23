@@ -49,6 +49,21 @@ def parse(file):
 		elif block_is_math(block):
 			nodes.append(MathBlock([parse_math(replace_math('\n'.join(block[1:-1])))]))
 
+		elif block_is_md_table(block):
+			header_content = map(parse_text, block[0].split('|'))
+			header = [TableHeader([i]) for i in header_content]
+
+			alignment = list(map(cell_align, block[1].split('|')))
+			table = Table([TableRow(header)])
+
+			for line in block[2:]:
+				cells = []
+				for content, align in zip(line.split('|'), alignment):
+					cells.append(TableCell(align, [parse_text(content)]))
+				table.children.append(TableRow(cells))
+
+			nodes.append(table)
+
 		else:
 			nodes.append(Paragraph(map(parse_text, block)))
 
