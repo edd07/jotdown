@@ -2,8 +2,9 @@ from re import sub, compile, match, UNICODE
 
 # Init RE objects
 re_flags = UNICODE
-re_ulistitem = compile(r'^\*\s*', flags=re_flags)
-re_olistitem = compile(r'^\d+\.\s*', flags=re_flags)
+re_listitem = compile(r'^(\t*)([\*\-\+]|\d+\.)\s*')
+re_ulistitem = compile(r'^(\t*)[\*\-\+]\s*', flags=re_flags)
+re_olistitem = compile(r'^(\t*)\d+\.\s*', flags=re_flags)
 re_code_delim = compile(r'^```\s*$', flags=re_flags)
 re_math_open = compile(r'^«««\s*$', flags=re_flags)
 re_math_close = compile(r'^»»»\s*$', flags=re_flags)
@@ -145,7 +146,6 @@ disabling_tokens = {
 
 text_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in text_tokens]
 math_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in math_tokens]
-
 math_subst = [(compile(exp, flags=re_flags), val) for (exp, val) in math_subst]
 
 
@@ -269,9 +269,7 @@ def block_is_math(block):
 	return match(re_math_open, block[0]) and match(re_math_close, block[-1])
 
 
-def ulist_item_text(item):
+def list_item_text(item):
+	if match(re_olistitem, item):
+		return sub(re_olistitem, '', item)
 	return sub(re_ulistitem, '', item)
-
-
-def olist_item_text(item):
-	return sub(re_olistitem, '', item)

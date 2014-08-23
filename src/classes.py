@@ -59,7 +59,7 @@ class OList(Node):
 
 class ListItem(Node):
 	def emit_html(self):
-		return "<li>" + ''.join(i.emit_html() for i in self.children) + "</li>"
+		return "<li><span>" + ''.join(i.emit_html() for i in self.children) + "</span></li>"
 
 
 class Paragraph(Node):

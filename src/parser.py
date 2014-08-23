@@ -2,6 +2,7 @@ from func import *
 from classes import *
 import sys
 
+
 def parse(file):
 	# Block-level "parser"
 	blocks = get_blocks(file)
@@ -15,17 +16,32 @@ def parse(file):
 			text = block[:-1]
 			nodes.append(Subheading(map(parse_text, text)))
 
-		elif block_is_ulist(block):
-			items = []
-			for line in block:
-				items.append(ListItem([parse_text(ulist_item_text(line))]))
-			nodes.append(UList(items))
+		elif block_is_ulist(block) or block_is_olist(block):
+			list_stack = []
+			indent = -1
 
-		elif block_is_olist(block):
-			items = []
 			for line in block:
-				items.append(ListItem([parse_text(olist_item_text(line))]))
-			nodes.append(OList(items))
+				m = match(re_listitem, line)
+				new_indent = len(m.group(1))
+
+				if new_indent > indent:
+					indent = new_indent
+					is_olist = bool(match(re_olistitem, line))
+					if is_olist:
+						list_stack.append(OList())
+					else:
+						list_stack.append(UList())
+				elif new_indent < indent:
+					closed_list = list_stack.pop()
+					list_stack[-1].children.append(closed_list)
+
+				list_stack[-1].children.append(ListItem([parse_text(list_item_text(line))]))
+
+			while len(list_stack) > 1:
+				closed_list = list_stack.pop()
+				list_stack[-1].children.append(closed_list)
+
+			nodes.append(list_stack[0])
 
 		elif block_is_code(block):
 			nodes.append(CodeBlock(map(Plaintext, block[1:-1])))

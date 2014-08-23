@@ -12,13 +12,13 @@ padding: 16px;
 color: #657b83;
 }
 
-h1, h2 {
+h1 {
 font-weight: bold;
 color: #b58900;
 }
 
-h2 {
-color: #cb4b16;
+h2 *, h2 {
+color: #cb4b16 !important;
 font-weight: normal;
 }
 
@@ -33,8 +33,8 @@ font-family: georgia, times, serif;
 quotes: none;
 }
 
-q, code {
-border-radius = 2.0;
+blockquote, q , code {
+color: #586e75;
 }
 
 blockquote, pre code {
@@ -58,4 +58,16 @@ pre {
 -moz-tab-size: 4;
 -o-tab-size:   4;
 tab-size:4;
+}
+
+ul {
+list-style: square;
+}
+
+li {
+color: #d33682;
+}
+
+li span {
+color: #657b83;
 }
