@@ -39,3 +39,10 @@ Some math-related features (namely capital-sigma notation for sums, capital-pi n
 not have a clean way to be marked up as HTML. For this reason, they are output as MathML inside `<math>` tags. MathML is
 supported by Firefox, Opera and Safari, but not by Chrome. Chrome users, be warned. All other expressions are kept as
 pure HTML for maximum compatibility.
+
+Output style
+------------
+
+Jotdown includes a `style.css` file that will be embedded in every HTML document in `<style>` tags. This file can be
+edited to produce any document style the user wants. By default, it a stylesheet based on the
+[Solarized](http://ethanschoonover.com/solarized) color scheme for maximum readability.
