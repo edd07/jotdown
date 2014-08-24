@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from func import *
 from classes import *
 import sys
@@ -160,6 +162,11 @@ if __name__ == "__main__":
 	else:
 		fname = "text.txt"
 
-	with open(fname, 'r') as f:
+	if len(sys.argv) > 2:
+		out = sys.argv[2]
+	else:
+		out = "out.html"
+
+	with open(fname, 'r') as f, open(out, 'wb') as fout:
 		doc = parse(f)
-		print(doc.emit_html())
+		fout.write(doc.emit_html())

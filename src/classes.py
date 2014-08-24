@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import html
 
 # Abstract ---------------------------------
@@ -26,7 +27,7 @@ class Document(Node):
 			for block in self.children:
 				res += block.emit_html()
 			res += "<body></html>"
-			return res
+			return res.encode('utf-8')
 
 
 class Heading(Node):

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from re import sub, compile, match, UNICODE
 
 # Init RE objects
