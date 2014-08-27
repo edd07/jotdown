@@ -157,7 +157,7 @@ class Parenthesis(Node):
 
 class Braces(Node):
 	def emit_html(self):
-		return "{" + ''.join(i.emit_html() for i in self.children) + "}"
+		return "{ " + ''.join(i.emit_html() for i in self.children) + " }"
 
 
 class Brackets(Node):

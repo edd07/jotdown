@@ -29,7 +29,7 @@ text_tokens = [
 ]
 
 math_exp = {
-	'op': r"\+\*/%=↔→←≈∼≠≟<≤≥>∈∉⊂⊄⊆⊈…!±−,",
+	'op': r"\+\*/%=↔→←≈∼≠≟<≤≥>∈∉⊂⊄⊆⊈…!±−,:|∀∧∨",
     'num': r'\d',
     'not_id': r'\W_',
     'parens': r'\(\)\{\}\[\]'
@@ -119,6 +119,9 @@ math_subst = [
 
 (r"ALEPH", 'ℵ'),
 
+(r"AND", '∧'),
+(r"OR", '∨'),
+
 (r"<->", '↔'),
 (r"->", '→'),
 (r"<-", '←'),
@@ -136,7 +139,8 @@ math_subst = [
 (r"!¢", '⊄'),
 (r"\.\.\.", '…'),
 (r"\+-", '±'),
-(r"-", '−')
+(r"-", '−'),
+(r"[æÆ]", '∀')
 ]
 
 # Tokens that disable text parsing : Until this is encountered, yield this token
