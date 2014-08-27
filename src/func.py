@@ -3,9 +3,9 @@ from re import sub, compile, match, UNICODE
 
 # Init RE objects
 re_flags = UNICODE
-re_listitem = compile(r'^(\t*)([\*\-\+]|\d+\.)\s*')
-re_ulistitem = compile(r'^(\t*)[\*\-\+]\s*', flags=re_flags)
-re_olistitem = compile(r'^(\t*)\d+\.\s*', flags=re_flags)
+re_listitem = compile(r'^(\t*)([\*\-\+]|\d+\.)\s+')
+re_ulistitem = compile(r'^(\t*)[\*\-\+]\s+', flags=re_flags)
+re_olistitem = compile(r'^(\t*)\d+\.\s+', flags=re_flags)
 re_code_delim = compile(r'^```\s*$', flags=re_flags)
 re_math_open = compile(r'^«««\s*$', flags=re_flags)
 re_math_close = compile(r'^»»»\s*$', flags=re_flags)
