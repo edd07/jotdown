@@ -50,8 +50,12 @@ class UList(Node):
 
 
 class OList(Node):
+	def __init__(self, children=None, start=1):
+		super().__init__(children)
+		self.start = start
+
 	def emit_html(self):
-		res = "<ol>"
+		res = "<ol start=\"%s\">" % self.start
 		for item in self.children:
 			res += item.emit_html()
 		res += "</ol>"
