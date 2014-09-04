@@ -94,7 +94,7 @@ td, th {
 padding: 5px;
 }
 
-th {
+th, th * {
 background-color: #6c71c4;
 color: #fdf6e3 !important;
 }
