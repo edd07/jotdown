@@ -81,7 +81,7 @@ def parse_text(text):
 	stack = ['Text_OPEN']
 	node_stack = [Text()]
 
-	for token, text in get_text_tokens(text):
+	for token, groups in get_text_tokens(text):
 		if '_OPEN' in token or '_CLOSE' in token:
 			# General rule for NODE_OPEN or NODE_CLOSE tokens
 			node, type = token.split('_')
@@ -119,10 +119,19 @@ def parse_text(text):
 				node_stack.append(node_class())
 
 		elif token == "Plaintext":
-			node_stack[-1].children.append(Plaintext(text))
+			node_stack[-1].children.append(Plaintext(groups[0]))
 
 		elif token == "Math":
-			node_stack[-1].children.append(parse_math(replace_math(text)))
+			node_stack[-1].children.append(parse_math(replace_math(groups[0])))
+
+		elif token == "ImplicitLink":
+			node_stack[-1].children.append(ImplicitLink(groups[0]))
+
+		elif token == "ImplicitEmail":
+			node_stack[-1].children.append(ImplicitEmail(groups[0]))
+
+		elif token == "Link":
+			node_stack[-1].children.append(Link(*groups))
 
 	return node_stack[0]
 
@@ -162,7 +171,7 @@ if __name__ == "__main__":
 	if len(sys.argv) > 1:
 		fname = sys.argv[1]
 	else:
-		fname = "text.txt"
+		fname = "text.jd"
 
 	if len(sys.argv) > 2:
 		out = sys.argv[2]

@@ -10,8 +10,8 @@ class Node():
 
 
 class TextNode(Node):
-	def __init__(self, text, children=None):
-		super().__init__(children)
+	def __init__(self, text):
+		super().__init__()
 		self.text = text
 
 	def emit_html(self):
@@ -121,6 +121,25 @@ class TableCell(Node):
 	def emit_html(self):
 		return "<td align=\"%s\">" % self.align_map[self.align] +\
 		       ''.join(i.emit_html() for i in self.children) + "</td>"
+
+
+class Link(TextNode):
+	def __init__(self, text, url):
+		super().__init__(text)
+		self.url = url
+
+	def emit_html(self):
+		return "<a href=\"" + self.url + "\">" + self.text + "</a>"
+
+
+class ImplicitLink(TextNode):
+	def emit_html(self):
+		return "<a href=\"" + self.text + "\">" + self.text + "</a>"
+
+
+class ImplicitEmail(TextNode):
+	def emit_html(self):
+		return "<a href=\"mailto:" + self.text + "\">" + self.text + "</a>"
 
 
 # For text -------------------------

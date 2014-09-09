@@ -24,7 +24,12 @@ text_tokens = [
     (r'«', 'MathInline_OPEN'),
     (r'»', 'MathInline_CLOSE'),
 
-	(r'(?:[^_\*`«»]|\\[^_\*`«»]|(?<=[^\W_])_(?=[^\W_]))*', 'Plaintext')
+    (r'(https?://\S*)', 'ImplicitLink'),
+    (r'\[([^)]*)\]\(([^\[]*)\)', 'Link'),
+
+    (r'(\S*@\S*)', 'ImplicitEmail'),
+
+	(r'(\s*(?:[^\s_\*`«»]|\\[^_\*`«»]|(?<=[^\W_])_(?=[^\W_]))*\s*)', 'Plaintext')
 
 ]
 
@@ -208,8 +213,8 @@ def get_text_tokens(text):
 			if not m:
 				raise Exception("Expected '%s' for unclosed tag in %s" % (enabling_char, repr(text[:50])))
 
-			yield disabled_token, m.group(1)
-			yield closing_token, enabling_char
+			yield disabled_token, m.groups()
+			yield closing_token, (enabling_char,)
 
 			text = text[len(m.group(0)):]
 			disabled = False
@@ -224,7 +229,7 @@ def get_text_tokens(text):
 						disabled = True
 						enabling_char, disabled_token, closing_token = disabling_tokens[val]
 
-					yield val, m.group(0)
+					yield val, m.groups()
 					text = text[m_len:]
 					break
 			else:
