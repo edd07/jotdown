@@ -140,6 +140,11 @@ class Strong(Node):
 		return "<strong>" + ''.join(i.emit_html() for i in self.children) + "</strong>"
 
 
+class StrongEmph(Node):
+	def emit_html(self):
+		return "<strong><em>" + ''.join(i.emit_html() for i in self.children) + "</em></strong>"
+
+
 # MATH -------------------
 
 class MathInline(Node):
