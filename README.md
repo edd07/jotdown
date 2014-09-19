@@ -44,5 +44,5 @@ Output style
 ------------
 
 Jotdown includes a `style.css` file that will be embedded in every HTML document in `<style>` tags. This file can be
-edited to produce any document style the user wants. By default, it a stylesheet based on the
+edited to produce any document style the user wants. By default, it uses a stylesheet based on the
 [Solarized](http://ethanschoonover.com/solarized) color scheme for maximum readability.
