@@ -38,7 +38,7 @@ def parse(file):
 					while new_indent < indent_stack[-1]:
 						indent_stack.pop()
 						closed_list = list_stack.pop()
-						list_stack[-1].children.append(closed_list)
+						list_stack[-1].children.append(ListItem([closed_list]))
 
 				list_stack[-1].children.append(ListItem([parse_text(list_item_text(line))]))
 
@@ -70,7 +70,7 @@ def parse(file):
 			nodes.append(table)
 
 		else:
-			nodes.append(Paragraph(map(parse_text, block)))
+			nodes.append(Paragraph(list(map(parse_text, block))))
 
 	return Document(nodes)
 
@@ -180,4 +180,5 @@ if __name__ == "__main__":
 
 	with open(fname, 'r') as f, open(out, 'wb') as fout:
 		doc = parse(f)
+		doc.name = fname
 		fout.write(doc.emit_html())

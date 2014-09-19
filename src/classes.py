@@ -21,12 +21,16 @@ class TextNode(Node):
 
 
 class Document(Node):
+	def __init__(self, children=None, name="Jotdown Document"):
+		super().__init__(children)
+		self.name = name
+
 	def emit_html(self):
 		with open("src/style.css") as style:
-			res = "<html><head><meta charset=\"UTF-8\"><style>%s</style></head><body>" % style.read()
-			for block in self.children:
-				res += block.emit_html()
-			res += "<body></html>"
+			res = "<!DOCTYPE html><html><head><title>%s</title><meta charset=\"UTF-8\"><style>%s</style></head><body>"\
+			      % (self.name, style.read())
+			res += '\n'.join(block.emit_html() for block in self.children)
+			res += "</body></html>"
 			return res.encode('utf-8')
 
 
@@ -40,7 +44,11 @@ class Subheading(Node):
 		return "<h2>" + '<br>'.join(i.emit_html() for i in self.children) + "</h2>"
 
 
-class UList(Node):
+class List(Node):
+	pass
+
+
+class UList(List):
 	def emit_html(self):
 		res = "<ul>"
 		for item in self.children:
@@ -49,7 +57,7 @@ class UList(Node):
 		return res
 
 
-class OList(Node):
+class OList(List):
 	def __init__(self, children=None, start=1):
 		super().__init__(children)
 		self.start = start
@@ -64,6 +72,10 @@ class OList(Node):
 
 class ListItem(Node):
 	def emit_html(self):
+
+		if len(self.children) == 1 and isinstance(self.children[0], List):
+			return "<li>" + self.children[0].emit_html() + "</li>"
+
 		return "<li><span>" + ''.join(i.emit_html() for i in self.children) + "</span></li>"
 
 
@@ -74,7 +86,7 @@ class Paragraph(Node):
 
 class CodeBlock(Node):
 	def emit_html(self):
-		return "<pre><code class=\"console\">" + ''.join(i.emit_html() for i in self.children) + "</code></pre>"
+		return "<code class=\"console\">" + ''.join(i.emit_html() for i in self.children) + "</code>"
 
 
 class MathBlock(Node):
@@ -119,7 +131,7 @@ class TableCell(Node):
 		self.align = align
 
 	def emit_html(self):
-		return "<td align=\"%s\">" % self.align_map[self.align] +\
+		return "<td style=\"text-align: %s;\">" % self.align_map[self.align] +\
 		       ''.join(i.emit_html() for i in self.children) + "</td>"
 
 
@@ -150,7 +162,7 @@ class Plaintext(TextNode):
 
 class CodeInline(Node):
 	def emit_html(self):
-		return "<pre><code>" + ''.join(i.emit_html() for i in self.children) + "</code></pre>"
+		return "<code>" + ''.join(i.emit_html() for i in self.children) + "</code>"
 
 
 class Emph(Node):
