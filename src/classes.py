@@ -10,8 +10,8 @@ class Node():
 
 
 class TextNode(Node):
-	def __init__(self, text, children=None):
-		super().__init__(children)
+	def __init__(self, text):
+		super().__init__()
 		self.text = text
 
 	def emit_html(self):
@@ -50,8 +50,12 @@ class UList(Node):
 
 
 class OList(Node):
+	def __init__(self, children=None, start=1):
+		super().__init__(children)
+		self.start = start
+
 	def emit_html(self):
-		res = "<ol>"
+		res = "<ol start=\"%s\">" % self.start
 		for item in self.children:
 			res += item.emit_html()
 		res += "</ol>"
@@ -119,6 +123,25 @@ class TableCell(Node):
 		       ''.join(i.emit_html() for i in self.children) + "</td>"
 
 
+class Link(TextNode):
+	def __init__(self, text, url):
+		super().__init__(text)
+		self.url = url
+
+	def emit_html(self):
+		return "<a href=\"" + self.url + "\">" + self.text + "</a>"
+
+
+class ImplicitLink(TextNode):
+	def emit_html(self):
+		return "<a href=\"" + self.text + "\">" + self.text + "</a>"
+
+
+class ImplicitEmail(TextNode):
+	def emit_html(self):
+		return "<a href=\"mailto:" + self.text + "\">" + self.text + "</a>"
+
+
 # For text -------------------------
 
 class Plaintext(TextNode):
@@ -162,7 +185,7 @@ class Parenthesis(Node):
 
 class Braces(Node):
 	def emit_html(self):
-		return "{" + ''.join(i.emit_html() for i in self.children) + "}"
+		return "{ " + ''.join(i.emit_html() for i in self.children) + " }"
 
 
 class Brackets(Node):

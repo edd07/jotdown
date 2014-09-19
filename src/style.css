@@ -28,6 +28,9 @@ blockquote {
 background-color: #eee8d5;
 font-family: georgia, times, serif;
 padding: 5px;
+text-align: center;
+border: #fdf6e3 solid;
+border-width: 0 1px 0 1px;
 }
 
 q {
@@ -91,7 +94,7 @@ td, th {
 padding: 5px;
 }
 
-th {
+th, th * {
 background-color: #6c71c4;
 color: #fdf6e3 !important;
 }

@@ -20,23 +20,25 @@ def parse(file):
 
 		elif block_is_list(block):
 			list_stack = []
-			indent = -1
+			indent_stack = [-1]
 
 			for line in block:
 				m = match(re_listitem, line)
 				new_indent = len(m.group(1))
 
-				if new_indent > indent:
-					indent = new_indent
-					is_olist = bool(match(re_olistitem, line))
-					if is_olist:
-						list_stack.append(OList())
-					else:
-						list_stack.append(UList())
-				elif new_indent < indent:
-					indent = new_indent
-					closed_list = list_stack.pop()
-					list_stack[-1].children.append(closed_list)
+				if new_indent > indent_stack[-1]:
+					while new_indent > indent_stack[-1]:
+						indent_stack.append(indent_stack[-1] + 1)
+						olist_match = re_olistitem.match(line)
+						if olist_match:
+							list_stack.append(OList(start=olist_match.group(2)))
+						else:
+							list_stack.append(UList())
+				elif new_indent < indent_stack[-1]:
+					while new_indent < indent_stack[-1]:
+						indent_stack.pop()
+						closed_list = list_stack.pop()
+						list_stack[-1].children.append(closed_list)
 
 				list_stack[-1].children.append(ListItem([parse_text(list_item_text(line))]))
 
@@ -79,7 +81,7 @@ def parse_text(text):
 	stack = ['Text_OPEN']
 	node_stack = [Text()]
 
-	for token, text in get_text_tokens(text):
+	for token, groups in get_text_tokens(text):
 		if '_OPEN' in token or '_CLOSE' in token:
 			# General rule for NODE_OPEN or NODE_CLOSE tokens
 			node, type = token.split('_')
@@ -117,10 +119,19 @@ def parse_text(text):
 				node_stack.append(node_class())
 
 		elif token == "Plaintext":
-			node_stack[-1].children.append(Plaintext(text))
+			node_stack[-1].children.append(Plaintext(groups[0]))
 
 		elif token == "Math":
-			node_stack[-1].children.append(parse_math(replace_math(text)))
+			node_stack[-1].children.append(parse_math(replace_math(groups[0])))
+
+		elif token == "ImplicitLink":
+			node_stack[-1].children.append(ImplicitLink(groups[0]))
+
+		elif token == "ImplicitEmail":
+			node_stack[-1].children.append(ImplicitEmail(groups[0]))
+
+		elif token == "Link":
+			node_stack[-1].children.append(Link(*groups))
 
 	return node_stack[0]
 
@@ -160,7 +171,7 @@ if __name__ == "__main__":
 	if len(sys.argv) > 1:
 		fname = sys.argv[1]
 	else:
-		fname = "text.txt"
+		fname = "text.jd"
 
 	if len(sys.argv) > 2:
 		out = sys.argv[2]
