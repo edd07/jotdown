@@ -52,21 +52,18 @@ border-radius:0;
 code {
 font-family: inconsolata, courier, monospace;
 display: inline;
-}
-
-.console {
-background-color: #002b36;
-color: #839496;
-}
-
-pre {
-display: inline;
 -moz-tab-size: 4;
 -o-tab-size:   4;
 tab-size:4;
 font-size: 12pt;
 padding:0;
 margin:0;
+white-space:pre;
+}
+
+.console {
+background-color: #002b36;
+color: #839496;
 }
 
 ul {

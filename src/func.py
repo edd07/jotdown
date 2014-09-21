@@ -15,6 +15,9 @@ re_math_close = compile(r'^»»»\s*$', flags=re_flags)
 text_tokens = [
 	(r'`', 'CodeInline_AMB'),
 
+	(r'\*\*\*', 'StrongEmph_AMB'),
+    (r'\b___', 'StrongEmph_AMB'),
+
     (r'\*\*', 'Strong_AMB'),
     (r'\b__', 'Strong_AMB'),
 
