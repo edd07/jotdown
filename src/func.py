@@ -34,19 +34,19 @@ text_tokens = [
 ]
 
 math_exp = {
-	'op': r"\+\*/%=↔→←≈∼≠≟<≤≥>∈∉⊂⊄⊆⊈…!±−,:|∀∧∨",
-    'num': r'\d',
+	'op': r"\+\*/%=↔→←≈∼≠≟<≤≥>∴∈∉⊂⊄⊆⊈…!±−,:|∀∧∨⊕¬",
+    'num': r'\d∞',
     'not_id': r'\W_',
     'not_letter': r'\W\d_',
     'parens': r'\(\)\{\}\[\]'
 }
 
 math_tokens = [
-	(r'(\^\()', "SuperscriptParens_OPEN"),
-    (r'(_\()', "SubscriptParens_OPEN"),
-    (r'(sum\()', "Sum_OPEN"),
-    (r'(prod\()', "Prod_OPEN"),
-    (r'(int\()', "Int_OPEN"),
+	(r'(\^\[)', "SuperscriptBrackets_OPEN"),
+    (r'(_\[)', "SubscriptBrackets_OPEN"),
+    (r'(sum\[)', "Sum_OPEN"),
+    (r'(prod\[)', "Prod_OPEN"),
+    (r'(int\[)', "Int_OPEN"),
 	(r'(\()', "Parenthesis_OPEN"),
     (r'(\))', "Parenthesis_CLOSE"),
 	(r'({)', "Braces_OPEN"),
@@ -57,15 +57,16 @@ math_tokens = [
 	(r'#\s*([^#\n]*)(?:[#\n]|$)', 'Comment'),
 	(r'_([^%(not_id)s]+|[%(num)s]+)' % math_exp, 'Subscript'),
     (r'\^([^%(not_id)s]+|[%(num)s]+)' % math_exp, 'Superscript'),
-	(r'([%(op)s])' % math_exp, 'Operator'),
-	(r'(%(num)s[%(num)s\.]*)' % math_exp, 'Number'),
+	(r'([+−]?[%(num)s][%(num)s\.]*)' % math_exp, 'Number'),
+    (r'([%(op)s])' % math_exp, 'Operator'),
 	#(r'([^_\^%(op)]*)\s*', 'Plaintext'),
-    (r'([^%(not_id)s]+)' % math_exp, 'Identifier'),
+    (r'([+−]?[^%(not_id)s]+)' % math_exp, 'Identifier'),
 	(r'([^\S\n]+)', 'Whitespace'),
 	(r'(\n)', 'Newline')
 ]
 
-parens_closable = ["SubscriptParens", "SuperscriptParens", "Sum", "Prod", "Int"]
+bracket_closable = ["SubscriptBrackets", "SuperscriptBrackets", "Sum", "Prod", "Int"]
+
 
 math_subst = [
 # Greek alphabet
@@ -125,7 +126,8 @@ math_subst = [
 (r'(?:\b|(?<=[%(not_letter)s]))REALS(?:\b|(?=[%(not_letter)s]))' % math_exp, 'ℝ'),
 (r'(?:\b|(?<=[%(not_letter)s]))COMPLEX(?:\b|(?=[%(not_letter)s]))' % math_exp, 'ℂ'),
 
-# Cardinal numbers
+# Infinities
+(r"(?:\b|(?<=[%(not_letter)s]))INF(?:\b|(?=[%(not_letter)s]))" % math_exp, '∞'),
 (r"(?:\b|(?<=[%(not_letter)s]))ALEPH(?:\b|(?=[%(not_letter)s]))" % math_exp, 'ℵ'),
 
 # Logic
@@ -143,6 +145,7 @@ math_subst = [
 (r"\?=", '≟'),
 (r"<=", '≤'),
 (r">=", '≥'),
+(r":\.", '∴'),
 
 # Sets
 (r"€", '∈'),

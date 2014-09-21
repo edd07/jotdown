@@ -236,7 +236,7 @@ class Int(Node):
 		   self.children[1].emit_mathml()) + ''.join(i.emit_html() for i in self.children[2:])
 
 
-class SuperscriptParens(Node):
+class SuperscriptBrackets(Node):
 	def emit_html(self):
 		return "<sup>" + ''.join(i.emit_html() for i in self.children) + "</sup>"
 
@@ -244,7 +244,7 @@ class SuperscriptParens(Node):
 		return "<msup><msrow></msrow><msrow>" + ''.join(i.emit_mathml() for i in self.children) + "</msrow></mssup>"
 
 
-class SubscriptParens(Node):
+class SubscriptBrackets(Node):
 	def emit_html(self):
 		return "<sub>" + ''.join(i.emit_html() for i in self.children) + "</sub>"
 

@@ -151,7 +151,7 @@ def parse_math(text):
 			if '_' in tos_token:
 				tos_node, tos_type = tos_token.split('_')
 				if tos_node == node and tos_type == 'OPEN' \
-					or tos_node in parens_closable and tos_type == 'OPEN':
+					or tos_node in bracket_closable and tos_type == 'OPEN' and node == 'Brackets':
 					stack.pop()
 					closed_node = node_stack.pop()
 					node_stack[-1].children.append(closed_node)

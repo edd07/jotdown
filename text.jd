@@ -61,3 +61,8 @@ This column is left aligned						| Right	| Center
 `some code here`		    					| 200 	| center
 «SIGMA_2^n t_j # some math»						| 500	| aligned
 Some *old*-__fashioned__ text               	| 700 	| column
+
+
+This is an http://implicit.com/link and https://another.one
+
+This is an implicit email@address.com and a [Link with a custom title and relative URL](src/style.css)
