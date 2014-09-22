@@ -38,7 +38,7 @@ def parse(file):
 					while new_indent < indent_stack[-1]:
 						indent_stack.pop()
 						closed_list = list_stack.pop()
-						list_stack[-1].children.append(ListItem([closed_list]))
+						list_stack[-1].children[-1].children.append(closed_list)
 
 				list_stack[-1].children.append(ListItem([parse_text(list_item_text(line))]))
 

@@ -72,12 +72,14 @@ class OList(List):
 
 class ListItem(Node):
 	def emit_html(self):
+		res = ["<li><span>", ''.join(i.emit_html() for i in self.children[:-1])]
 
-		if len(self.children) == 1 and isinstance(self.children[0], List):
-			return "<li>" + self.children[0].emit_html() + "</li>"
+		if len(self.children) > 0 and isinstance(self.children[-1], List):
+			res.append("</span>" + self.children[-1].emit_html())
+		else:
+			res.append(self.children[-1].emit_html() + "</span>")
 
-		return "<li><span>" + ''.join(i.emit_html() for i in self.children) + "</span></li>"
-
+		return ''.join(res)
 
 class Paragraph(Node):
 	def emit_html(self):

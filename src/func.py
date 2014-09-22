@@ -59,7 +59,7 @@ math_tokens = [
 
 	(r'#\s*([^#\n]*)(?:[#\n]|$)', 'Comment'),
 	(r'_([^%(not_id)s]+|[%(num)s]+)' % math_exp, 'Subscript'),
-    (r'\^([^%(not_id)s]+|[%(num)s]+)' % math_exp, 'Superscript'),
+    (r'\^([^%(not_id)s]+|[%(num)s]+|\*|∁)' % math_exp, 'Superscript'),
 	(r'([+−]?[%(num)s][%(num)s\.]*)' % math_exp, 'Number'),
     (r'([%(op)s])' % math_exp, 'Operator'),
 	#(r'([^_\^%(op)]*)\s*', 'Plaintext'),
