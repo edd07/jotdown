@@ -76,7 +76,7 @@ class ListItem(Node):
 
 		if len(self.children) > 0 and isinstance(self.children[-1], List):
 			res.append("</span>" + self.children[-1].emit_html())
-		else:
+		elif len(self.children) > 0:
 			res.append(self.children[-1].emit_html() + "</span>")
 
 		return ''.join(res)
