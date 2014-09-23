@@ -50,9 +50,9 @@ A -> B # This one has a comment # PHI(0) <= 4 # and then another equation
 P != NP
 1 <= 2
 ALEPH_0
-sum([j=2] n j) = (n*(n+1)/2) + 1
-prod([i=1] 4 i) = 24
-F(b) - F(a) = int(a b [f(x) dx])
+sum[[j=2] n j] = (n*(n+1)/2) + 1
+prod[[i=1] 4 i] = 24
+F(b) - F(a) = int[a b [f(x) dx]]
 omega^*
 Aĉ
 »»»

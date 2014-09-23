@@ -81,6 +81,7 @@ class ListItem(Node):
 
 		return ''.join(res)
 
+
 class Paragraph(Node):
 	def emit_html(self):
 		return "<p>" + "<br>".join(i.emit_html() for i in self.children) + "</p>"

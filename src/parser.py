@@ -133,6 +133,8 @@ def parse_text(text):
 		elif token == "Link":
 			node_stack[-1].children.append(Link(*groups))
 
+	if len(stack) > 1:
+		raise Exception("Missing closing tag for %s" % stack[-1])
 	return node_stack[0]
 
 
@@ -163,6 +165,8 @@ def parse_math(text):
 			node_class = globals()[token]
 			node_stack[-1].children.append(node_class(text))
 
+	if len(stack) > 1:
+		raise Exception("Missing closing math tag for %s" % stack[-1])
 	return node_stack[0]
 
 
