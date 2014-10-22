@@ -80,6 +80,7 @@ def parse_text(text):
 
 	stack = ['Text_OPEN']
 	node_stack = [Text()]
+	debug_text = text[:50]
 
 	for token, groups in get_text_tokens(text):
 		if '_OPEN' in token or '_CLOSE' in token:
@@ -134,13 +135,14 @@ def parse_text(text):
 			node_stack[-1].children.append(Link(*groups))
 
 	if len(stack) > 1:
-		raise Exception("Missing closing tag for %s" % stack[-1])
+		raise Exception("Missing closing tag for %s at %s" % (stack[-1], repr(debug_text)))
 	return node_stack[0]
 
 
 def parse_math(text):
 	stack = ['Math_OPEN']
 	node_stack = [Math()]
+	debug_text = text[:50]
 
 	for token, text in get_math_tokens(text):
 		if '_OPEN' in token:
@@ -166,7 +168,7 @@ def parse_math(text):
 			node_stack[-1].children.append(node_class(text))
 
 	if len(stack) > 1:
-		raise Exception("Missing closing math tag for %s" % stack[-1])
+		raise Exception("Missing closing math tag for %s at: %s" % (stack[-1], repr(debug_text)))
 	return node_stack[0]
 
 
