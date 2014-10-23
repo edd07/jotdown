@@ -17,7 +17,7 @@ class TextNode(Node):
 	def emit_html(self):
 		return html.escape(self.text, quote=True)
 
-# For blocks ----------------------------------
+# For blocks -------------------------------------------------------------------------
 
 
 class Document(Node):
@@ -157,7 +157,7 @@ class ImplicitEmail(TextNode):
 		return "<a href=\"mailto:" + self.text + "\">" + self.text + "</a>"
 
 
-# For text -------------------------
+# For text ----------------------------------------------------------------------
 
 class Plaintext(TextNode):
 	pass
@@ -181,6 +181,11 @@ class Strong(Node):
 class StrongEmph(Node):
 	def emit_html(self):
 		return "<strong><em>" + ''.join(i.emit_html() for i in self.children) + "</em></strong>"
+
+
+class Strikethrough(Node):
+	def emit_html(self):
+		return "<del>" + ''.join(i.emit_html() for i in self.children) + "</del>"
 
 
 # MATH -------------------

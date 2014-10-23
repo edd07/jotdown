@@ -24,21 +24,23 @@ text_tokens = [
     (r'\*', 'Emph_AMB'),
     (r'\b_', 'Emph_AMB'),
 
+    (r'~~', 'Strikethrough_AMB'),
+
     (r'«', 'MathInline_OPEN'),
     (r'»', 'MathInline_CLOSE'),
 
-    (r'(https?://\S*)', 'ImplicitLink'),
+    (r'(https?://\S+)', 'ImplicitLink'),
     (r'\[([^)]*)\]\(([^\[]*)\)', 'Link'),
 
-    (r'(\S*@\S*)', 'ImplicitEmail'),
+    (r'(\S+@\S+\.\S+)', 'ImplicitEmail'),
 
-	(r'(\s*(?:[^\s_\*`«»]|\\[^_\*`«»]|(?<=[^\W_])_(?=[^\W_]))*\s*)', 'Plaintext')
+	(r'(\s*(?:[^\s_\*`«»~]|~(?!~)|\\[^_\*`«»~]|(?<=[^\W_])_(?=[^\W_]))*\s*)', 'Plaintext')
 
 ]
 
 math_exp = {
 	'op': r"\+\*/%=↔→←≈∼≠≟<≤≥>∴∈∉⊂⊄⊆⊈…!±−,:|∀∧∨⊕¬",
-    'num': r'\d∞',
+    'num': r'\d∞\.',
     'not_id': r'\W_',
     'not_letter': r'\W\d_',
     'parens': r'\(\)\{\}\[\]'
@@ -59,7 +61,7 @@ math_tokens = [
 
 	(r'#\s*([^#\n]*)(?:[#\n]|$)', 'Comment'),
 	(r'_([^%(not_id)s]+|[%(num)s]+)' % math_exp, 'Subscript'),
-    (r'\^([^%(not_id)s]+|[%(num)s]+|\*|∁)' % math_exp, 'Superscript'),
+    (r'\^([^%(not_id)s]+|[%(num)s]+|\*|∁|)' % math_exp, 'Superscript'),
 	(r'([+−]?[%(num)s][%(num)s\.]*)' % math_exp, 'Number'),
     (r'([%(op)s])' % math_exp, 'Operator'),
 	#(r'([^_\^%(op)]*)\s*', 'Plaintext'),
@@ -148,7 +150,7 @@ math_subst = [
 (r"\?=", '≟'),
 (r"<=", '≤'),
 (r">=", '≥'),
-(r":\.", '∴'),
+(r":\.|\.:", '∴'),
 
 # Sets
 (r"€", '∈'),
