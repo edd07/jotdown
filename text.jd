@@ -76,3 +76,5 @@ Some *old*-__fashioned__ text               	| 700 	| column
 This is an http://implicit.com/link and https://another.one
 
 This is an implicit email@address.com and a [Link with a custom title and relative URL](src/style.css)
+
+This is an obligatory ![picture of a cat](http://placekitten.com/g/200/300 "Title text!")

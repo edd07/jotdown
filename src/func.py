@@ -29,8 +29,9 @@ text_tokens = [
     (r'«', 'MathInline_OPEN'),
     (r'»', 'MathInline_CLOSE'),
 
+	(r'!\[([^\]]*)\]\(([^\)\s]*)\s*(?:"([^"]*)"\s*)?\)', 'Image'),
     (r'(https?://\S+)', 'ImplicitLink'),
-    (r'\[([^)]*)\]\(([^\[]*)\)', 'Link'),
+    (r'\[([^\]]*)\]\(([^\)]*)\)', 'Link'),
 
     (r'(\S+@\S+\.\S+)', 'ImplicitEmail'),
 

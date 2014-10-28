@@ -142,6 +142,9 @@ def parse_text(text):
 		elif token == "Link":
 			node_stack[-1].children.append(Link(*groups))
 
+		elif token == "Image":
+			node_stack[-1].children.append(Image(*groups))
+
 	if len(stack) > 1:
 		raise Exception("Missing closing tag for %s at %s" % (stack[-1], repr(debug_text)))
 	return node_stack[0]

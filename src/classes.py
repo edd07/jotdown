@@ -152,6 +152,17 @@ class Link(TextNode):
 		return "<a href=\"" + self.url + "\">" + self.text + "</a>"
 
 
+class Image(Node):
+	def __init__(self, alt, src, title, children=None):
+		super().__init__(children)
+		self.alt = alt
+		self.src = src
+		self.title = title
+
+	def emit_html(self):
+		return "<img src=\"%s\" title=\"%s\" alt=\"%s\">" % (self.src, self.title, self.alt)
+
+
 class ImplicitLink(TextNode):
 	def emit_html(self):
 		return "<a href=\"" + self.text + "\">" + self.text + "</a>"
