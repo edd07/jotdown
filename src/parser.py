@@ -69,6 +69,14 @@ def parse(file):
 
 			nodes.append(table)
 
+		elif block_is_blockquote(block):
+			def remove_gt(line):
+				if line[0] == '>':
+					return parse_text(line[1:])
+				else:
+					return parse_text(line)
+			nodes.append(Blockquote(map(remove_gt, block)))
+
 		else:
 			nodes.append(Paragraph(list(map(parse_text, block))))
 

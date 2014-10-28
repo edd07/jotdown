@@ -94,6 +94,11 @@ class CodeBlock(Node):
 
 class MathBlock(Node):
 	def emit_html(self):
+		return "<div class='math'>" + "<br>".join(i.emit_html() for i in self.children) + "</div>"
+
+
+class Blockquote(Node):
+	def emit_html(self):
 		return "<blockquote>" + "<br>".join(i.emit_html() for i in self.children) + "</blockquote>"
 
 

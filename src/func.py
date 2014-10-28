@@ -59,7 +59,7 @@ math_tokens = [
     (r'(\[)', "Brackets_OPEN"),  # Brackets are for grouping that won't show up in output
 	(r'(\])', "Brackets_CLOSE"),
 
-	(r'#\s*([^#\n]*)(?:[#\n]|$)', 'Comment'),
+	(r'#\s*([^#\n]*)(?:#|\n|$)', 'Comment'),
 	(r'_([^%(not_id)s]+|[%(num)s]+)' % math_exp, 'Subscript'),
     (r'\^([^%(not_id)s]+|[%(num)s]+|\*|∁|)' % math_exp, 'Superscript'),
 	(r'([+−]?[%(num)s][%(num)s\.]*)' % math_exp, 'Number'),
@@ -311,6 +311,10 @@ def block_is_md_table(block):
 		if row_cols != table_cols:
 			return False
 	return True
+
+
+def block_is_blockquote(block):
+	return block[0][0] == '>'
 
 
 def list_item_text(item):

@@ -24,13 +24,17 @@ font-family: helvetica, arial, sans-serif;
 font-style: normal;
 }
 
-blockquote {
+a {
+color: #268bd2;
+}
+
+.math {
 background-color: #eee8d5;
 font-family: georgia, times, serif;
-padding: 5px;
+padding: 16px;
 text-align: center;
-border: #fdf6e3 solid;
-border-width: 0 1px 0 1px;
+border: #859900 solid 1px;
+margin: 16px 40px 16px 40px;
 }
 
 q {
@@ -38,11 +42,11 @@ font-family: georgia, times, serif;
 quotes: none;
 }
 
-blockquote, q , code {
+.math, q , code {
 color: #586e75;
 }
 
-blockquote, .console {
+.console {
 display: block;
 margin: 0 -16px 0 -16px;
 padding: 16px;
@@ -76,6 +80,13 @@ color: #d33682;
 
 li span {
 color: #657b83;
+}
+
+blockquote {
+color: #586e75;
+background-color: #eee8d5;
+padding: 16px;
+border: #2aa198 solid 1px;
 }
 
 table {
