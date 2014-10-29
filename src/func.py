@@ -40,7 +40,7 @@ text_tokens = [
 ]
 
 math_exp = {
-	'op': r"\+\*/%=↔→←≈∼≠≟<≤≥>∴∈∉⊂⊄⊆⊈…!±−,:|∀∧∨⊕¬",
+	'op': r"\+\*/%=↔→←≈∼≠≟<≤≥>∴∈∉⊂⊄⊆⊈…!±−,:|∀∧∨⊕¬∩∪Ø",
     'num': r'\d∞\.',
     'not_id': r'\W_',
     'not_letter': r'\W\d_',
@@ -164,6 +164,7 @@ math_subst = [
 (r"[Ĉĉ]", "^∁"),
 (r"(?:\b|(?<=[%(not_letter)s]))UNION(?:\b|(?=[%(not_letter)s]))" % math_exp, '∪'),
 (r"(?:\b|(?<=[%(not_letter)s]))INTERSECTION(?:\b|(?=[%(not_letter)s]))" % math_exp, '∩'),
+(r"(?:\b|(?<=[%(not_letter)s]))EMPTY(?:\b|(?=[%(not_letter)s]))" % math_exp, 'Ø'),
 
 # More operators
 (r"\.\.\.", '…'),
