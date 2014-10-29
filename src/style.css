@@ -6,10 +6,11 @@ body {
 font-family: helvetica, arial, sans-serif;
 font-size: 12pt;
 margin: 0 auto 0 auto;
-width: 900px;
+max-width: 900px;
 background-color: #fdf6e3;
 padding: 16px;
 color: #657b83;
+border-top: 5px solid #b58900;
 }
 
 h1 {
