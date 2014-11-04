@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from func import *
+from lexer import *
 from classes import *
 import sys
 
