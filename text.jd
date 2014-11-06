@@ -20,7 +20,7 @@ Another list of things:
 
 A block of code:
 
-```
+```language
 This is computer code...
 
 ...with an empty line in the middle
@@ -34,24 +34,27 @@ And a sub-
 heading too
 -----------
 
-A *multi-line*
-paragraph
+Unlike Markdown, line breaks in a paragraph
+will be rendered, word-wrap is expected to
+be handled by your editor and not manually.
 
-Testing *italics*, **bold**, and `code_with * asterisk` and a variable_name
-There are also alternate tokens for _italics_ and __bold__
-This is **nested *italics* in bold**
-This is ***strong emphasis*** and ___again___
-This is an equation inline «a^2 + b^2 = c^2» with text after it
-This is some ~~strikethrough~~ text, like on Github, and a lonely ~ tilde
+Text can be formatted with asterisks as *italics*, **bold**, but ignored inside `code * tags`.
+There are also alternate tokens (underscores) for _italics_ and __bold__, but they will be ignored if it looks like a variable_name
+The tags can be used like this: **nested *italics* in bold**
+Or combined like this: ***strong emphasis*** and ___again___
+This is an equation inline «a^2 + b^2 = c^2» with more text after it
+This is some ~~strikethrough~~ text, like on Github, and a lonely ~ tilde rendered normally
 
 >This is a
->hard-wrapped blockquote
+>hard-wrapped blockquote.
+>Newlines are also rendered
 
->This is a lazy
-blockquote with only one '>'
+>This is a lazy blockquote with only one '>' at the beginning of the block and
+a hard-wrapped line
 
 «««
-# This is a block of math equations
+# This is a comment inside block of math equations
+# Comments end with a newline or another hash symbol #
 a^2 + b^2 = c^2
 A -> B # This one has a comment # PHI(0) <= 4 # and then another equation
 P != NP
@@ -64,16 +67,21 @@ omega^*
 Aĉ
 »»»
 
+Tables
+======
+
 A table with inline formatting:
 
 This column is left aligned	(default)			| Right	| Center
-------------------------------------------------|------:|:--------------:
+------------------------------------------------|------:|:-------:
 `some code here`		    					| 200 	| center
-«SIGMA_2^n t_j # some math»						| 500	| aligned
+«sum[2 n t_j]» math here		            	| 500	| aligned
 Some *old*-__fashioned__ text               	| 700 	| column
 
+Links and images
+================
 
-This is an http://implicit.com/link and https://another.one
+This is an http://implicit.com/link and a https://secure.one
 
 This is an implicit email@address.com and a [Link with a custom title and relative URL](src/style.css)
 

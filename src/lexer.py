@@ -5,10 +5,11 @@ from regex import *
 
 # Init RE objects
 re_flags = UNICODE
-re_listitem = compile(r'^(\t*)([\*\-\+]|\d+\.)\s+')
+re_listitem = compile(r'^(\t*)([\*\-\+]|\d+\.)\s+', flags=re_flags)
 re_ulistitem = compile(r'^(\t*)[\*\-\+]\s+', flags=re_flags)
 re_olistitem = compile(r'^(\t*)(\d+)\.\s+', flags=re_flags)
-re_code_delim = compile(r'^```\s*$', flags=re_flags)
+re_code_amb = compile(r'^```\s*$', flags=re_flags)
+re_code_open = compile(r'^```([\w\d+#][\w\d+#\s]*)$', flags=re_flags)
 re_math_open = compile(r'^«««\s*$', flags=re_flags)
 re_math_close = compile(r'^»»»\s*$', flags=re_flags)
 
@@ -83,8 +84,11 @@ def get_blocks(file):
 	in_blankable_block = False
 	for line in file:
 
-		if match(re_code_delim, line):
+		if match(re_code_open, line):
+			in_blankable_block = True
+		elif match(re_code_amb, line):
 			in_blankable_block = not in_blankable_block
+
 		elif match(re_math_open, line):
 			in_blankable_block = True
 		elif match(re_math_close, line):
@@ -184,7 +188,7 @@ def block_is_list(block):
 
 
 def block_is_code(block):
-	return match(re_code_delim, block[0]) and match(re_code_delim, block[-1])
+	return (match(re_code_open, block[0]) or match(re_code_amb, block[0])) and match(re_code_amb, block[-1])
 
 
 def block_is_math(block):
