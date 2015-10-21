@@ -25,8 +25,8 @@ class Document(Node):
 		super().__init__(children)
 		self.name = name
 
-	def emit_html(self):
-		with open("src/style.css") as style:
+	def emit_html(self, style_fname):
+		with open(style_fname) as style:
 			res = "<!DOCTYPE html><html><head><title>%s</title><meta charset=\"UTF-8\"><style>%s</style></head><body>"\
 			      % (self.name, style.read())
 			res += '\n'.join(block.emit_html() for block in self.children)

@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+
+from jotdown.parser import parse
+
+import argparse
+import os
+
+own_directory = os.path.dirname(os.path.abspath(__file__))
+
+argparser = argparse.ArgumentParser()
+argparser.add_argument('input')
+argparser.add_argument('-o', '--output', default='out.html')
+argparser.add_argument('-s', '--style', default=os.path.join(own_directory, 'styles/solarized.css'))
+args = argparser.parse_args()
+
+with open(args.input, 'r') as f, open(args.output, 'wb') as fout:
+	doc = parse(f)
+	doc.name = args.input.split('.')[0]  # Remove the extension for the title of the document
+	fout.write(doc.emit_html(args.style))

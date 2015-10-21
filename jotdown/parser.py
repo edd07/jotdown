@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from lexer import *
-from classes import *
+from jotdown.lexer import *
+from jotdown.classes import *
 import sys
 
 

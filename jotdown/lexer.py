@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from re import sub, compile, match, UNICODE
 
-from regex import *
+from jotdown.regex import *
 
 # Init RE objects
 re_flags = UNICODE
