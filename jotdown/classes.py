@@ -44,6 +44,11 @@ class Subheading(Node):
 		return "<h2>" + '<br>'.join(i.emit_html() for i in self.children) + "</h2>"
 
 
+class HorizontalRule(Node):
+	def emit_html(self):
+		return "<hr/>"
+
+
 class List(Node):
 	pass
 

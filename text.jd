@@ -37,6 +37,9 @@ heading too
 Unlike Markdown, line breaks in a paragraph
 will be rendered, word-wrap is expected to
 be handled by your editor and not manually.
+Here's a horizontal rule:
+
+---
 
 Text can be formatted with asterisks as *italics*, **bold**, but ignored inside `code * tags`.
 There are also alternate tokens (underscores) for _italics_ and __bold__, but they will be ignored if it looks like a variable_name

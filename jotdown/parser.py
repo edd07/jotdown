@@ -10,7 +10,10 @@ def parse(file):
 	blocks = get_blocks(file)
 	nodes = []
 	for block in blocks:
-		if block_is_heading(block):
+		if block_is_horizontal_rule(block):
+			nodes.append(HorizontalRule())
+
+		elif block_is_heading(block):
 			text = block[:-1]
 			nodes.append(Heading(map(parse_text, text)))
 

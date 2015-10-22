@@ -164,6 +164,19 @@ def replace_math(text):
 	return text
 
 
+def block_is_horizontal_rule(block):
+	if len(block) > 1:
+		return False
+	line = block[0].replace(' ', '').replace('\t', '')
+	for symbol in '*-':
+		for char in line:
+			if char != symbol and char != '\n':
+				break
+		else:
+			return True
+	return False
+
+
 def block_is_heading(block):
 	last_line = block[-1]
 	for char in last_line:
