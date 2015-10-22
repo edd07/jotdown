@@ -14,9 +14,11 @@ Compiler for a Markdown-like syntax intended for note-taking. Jotdown is:
 Usage
 -----
 
-To parse a single jotdown file (suggested extension: `.jd`), use `parser.py`:
+To parse a single jotdown file (suggested extension: `.jd`), use `jd`:
 
-    $ python3 parser.py <input_file.jd> <output_file.html>
+    $ jd <input_file.jd> [-o <output_file.html>] [-s <custom_stylesheet.css]
+    
+The `-o` and `-s` parameters are optional. The output file will be `out.html` if one is not specified.
 
 Support for parsing a directory structure and generating index pages is planned but not yet implemented.
 
@@ -43,6 +45,6 @@ pure HTML for maximum compatibility.
 Output style
 ------------
 
-Jotdown includes a `style.css` file that will be embedded in every HTML document in `<style>` tags. This file can be
-edited to produce any document style the user wants. By default, it uses a stylesheet based on the
+Jotdown includes a `style.css` file that will be embedded in every HTML document in `<style>` tags if a custom stylesheet is not specified. This file can be
+edited to produce any document style the user wants. The default stylesheet is based on the
 [Solarized](http://ethanschoonover.com/solarized) color scheme for maximum readability.
