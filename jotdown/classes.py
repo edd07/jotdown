@@ -316,7 +316,7 @@ class Superscript(TextNode):
 
 class Identifier(TextNode):
 	def emit_html(self):
-		return "<strong><em>" + html.escape(self.text, quote=True) + "</em></strong>"
+		return "<em>" + html.escape(self.text, quote=True) + "</em>"
 
 	def emit_mathml(self):
 		return "<mi>" + self.text + "</mi>"
