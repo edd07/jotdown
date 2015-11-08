@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from re import sub, compile, match, UNICODE
-
 from jotdown.regex import *
 
 # Init RE objects
@@ -19,24 +18,27 @@ text_tokens = [
 	(r'`', 'CodeInline_AMB'),
 
 	(r'\*\*\*', 'StrongEmph_AMB'),
-    (r'\b___', 'StrongEmph_AMB'),
+	(r'\b___', 'StrongEmph_AMB'),
 
-    (r'\*\*', 'Strong_AMB'),
-    (r'\b__', 'Strong_AMB'),
+	(r'\*\*', 'Strong_AMB'),
+	(r'\b__', 'Strong_AMB'),
 
-    (r'\*', 'Emph_AMB'),
-    (r'\b_', 'Emph_AMB'),
+	(r'\*', 'Emph_AMB'),
+	(r'\b_', 'Emph_AMB'),
 
-    (r'~~', 'Strikethrough_AMB'),
+	(r'~~', 'Strikethrough_AMB'),
 
-    (r'«', 'MathInline_OPEN'),
-    (r'»', 'MathInline_CLOSE'),
+	(r'«', 'MathInline_OPEN'),
+	(r'»', 'MathInline_CLOSE'),
 
 	(r'!\[([^\]]*)\]\(([^\)\s]*)\s*(?:"([^"]*)"\s*)?\)', 'Image'),
-    (r'(https?://\S+)', 'ImplicitLink'),
-    (r'\[([^\]]*)\]\(([^\)]*)\)', 'Link'),
+	(r'(https?://\S+)', 'ImplicitLink'),
+	(r'\[([^\]]*)\]\(([^\)]*)\)', 'Link'),
 
-    (r'(\S+@\S+\.\S+)', 'ImplicitEmail'),
+	(r'\[([^\]]*)\]\[([^\]]*)\]', 'ReferenceLink'),
+	(r'\[([^\]]*)\]:\s*(.*)\n', 'ReferenceDef'),
+
+	(r'(\S+@\S+\.\S+)', 'ImplicitEmail'),
 
 	(r'(\s*(?:[^\s_\*`«»~]|~(?!~)|\\[^_\*`«»~]|(?<=[^\W_])_(?=[^\W_]))*\s*)', 'Plaintext')
 
@@ -44,24 +46,24 @@ text_tokens = [
 
 math_tokens = [
 	(r'(\^\[)', "SuperscriptBrackets_OPEN"),
-    (r'(_\[)', "SubscriptBrackets_OPEN"),
-    (r'(sum\[)', "Sum_OPEN"),
-    (r'(prod\[)', "Prod_OPEN"),
-    (r'(int\[)', "Int_OPEN"),
+	(r'(_\[)', "SubscriptBrackets_OPEN"),
+	(r'(sum\[)', "Sum_OPEN"),
+	(r'(prod\[)', "Prod_OPEN"),
+	(r'(int\[)', "Int_OPEN"),
 	(r'(\()', "Parenthesis_OPEN"),
-    (r'(\))', "Parenthesis_CLOSE"),
+	(r'(\))', "Parenthesis_CLOSE"),
 	(r'({)', "Braces_OPEN"),
 	(r'(})', "Braces_CLOSE"),
-    (r'(\[)', "Brackets_OPEN"),  # Brackets are for grouping that won't show up in output
+	(r'(\[)', "Brackets_OPEN"),  # Brackets are for grouping that won't show up in output
 	(r'(\])', "Brackets_CLOSE"),
 
 	(r'#\s*([^#\n]*)(?:#|\n|$)', 'Comment'),
 	(r'_([%(num)s]+|[^%(not_id)s]+)' % math_exp, 'Subscript'),
-    (r'\^([%(num)s]+|[^%(not_id)s]+|\*|∁|)' % math_exp, 'Superscript'),
+	(r'\^([%(num)s]+|[^%(not_id)s]+|\*|∁|)' % math_exp, 'Superscript'),
 	(r'([+−]?[%(num)s][%(num)s\.]*)' % math_exp, 'Number'),
-    (r'([%(op)s])' % math_exp, 'Operator'),
-	#(r'([^_\^%(op)]*)\s*', 'Plaintext'),
-    (r'([+−]?[^%(not_id)s]+)' % math_exp, 'Identifier'),
+	(r'([%(op)s])' % math_exp, 'Operator'),
+	# (r'([^_\^%(op)]*)\s*', 'Plaintext'),
+	(r'([+−]?[^%(not_id)s]+)' % math_exp, 'Identifier'),
 	(r'([^\S\n]+)', 'Whitespace'),
 	(r'(\n)', 'Newline')
 ]
@@ -71,7 +73,7 @@ bracket_closable = ["SubscriptBrackets", "SuperscriptBrackets", "Sum", "Prod", "
 # Tokens that disable text parsing : Until this is encountered, yield this token
 disabling_tokens = {
 	'CodeInline_AMB': ('`', 'Plaintext', 'CodeInline_AMB'),
-    'MathInline_OPEN': ('»', 'Math', 'MathInline_CLOSE')
+	'MathInline_OPEN': ('»', 'Math', 'MathInline_CLOSE')
 }
 
 text_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in text_tokens]

@@ -88,5 +88,9 @@ Links and images
 This is an http://implicit.com/link and a https://secure.one
 
 This is an implicit email@address.com and a [Link with a custom title and relative URL](src/style.css)
+This is a [reference-style link][ref]. These can be rendered as citations with a command line option, and can have content that does not work [as a link][citation]
+[ref]: http://example.com
 
-This is an obligatory ![picture of a cat](http://placekitten.com/g/200/300 "Title text!")
+This is an obligatory ![picture of a cat](http://placekitten.com/g/300/301 "Title text!")
+
+[citation]: Because this is a citation, *with* **format**

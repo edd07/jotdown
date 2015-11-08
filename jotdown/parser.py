@@ -2,6 +2,8 @@
 
 from jotdown.lexer import *
 from jotdown.classes import *
+import jotdown.globalv as globalv
+
 import sys
 
 
@@ -144,6 +146,15 @@ def parse_text(text):
 
 		elif token == "Link":
 			node_stack[-1].children.append(Link(*groups))
+
+		elif token == "ReferenceLink":
+			text, ref_key = groups
+			node_stack[-1].children.append(ReferenceLink(*groups))
+			globalv.references[ref_key] = None  # Save its place in the OrderedDict
+
+		elif token == "ReferenceDef":
+			ref_key, text = groups
+			globalv.references[ref_key] = parse_text(text), text
 
 		elif token == "Image":
 			node_stack[-1].children.append(Image(*groups))
