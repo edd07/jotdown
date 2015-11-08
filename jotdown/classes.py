@@ -255,7 +255,7 @@ class Strikethrough(Node):
 
 class MathInline(Node):
 	def emit_html(self, **kwargs):
-		return '<span class="math">' + ''.join(i.emit_html(**kwargs) for i in self.children) + '</q>'
+		return '<span class="math">' + ''.join(i.emit_html(**kwargs) for i in self.children) + '</span>'
 
 
 class Parenthesis(Node):
