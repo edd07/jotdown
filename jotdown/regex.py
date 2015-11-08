@@ -1,10 +1,10 @@
 # "Macro" regexes for math tokens
 math_exp = {
 	'op': r"\+\*/%=↔→←≈∼≠≟<≤≥>∴∈∉⊂⊄⊆⊈…!±−,:|∀∧∨⊕¬∩∪Ø",
-    'num': r'\d∞\.',
-    'not_id': r'\W_',
-    'not_letter': r'\W\d_',
-    'parens': r'\(\)\{\}\[\]'
+	'num': r'\d∞\.',
+	'not_id': r'\W_',
+	'not_letter': r'\W\d_',
+	'parens': r'\(\)\{\}\[\]'
 }
 
 # Regex used for only substituting something if it's its own word

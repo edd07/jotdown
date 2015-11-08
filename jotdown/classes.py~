@@ -247,7 +247,7 @@ class Sum(Node):
 		<mrow>%s</mrow><mrow>%s</mrow>
 	</munderover>
 	<mrow></mrow>
-	</mrow></mstyle></math>
+	</mrow><mstyle></math>
 	""" % (self.children[0].emit_mathml(),
 		   self.children[1].emit_mathml()) + ''.join(i.emit_html() for i in self.children[2:])
 
@@ -256,13 +256,13 @@ class Prod(Node):
 	def emit_html(self):
 		# return "∏"
 		return """
-	<math><mstyle displaystyle="true"><mrow>
+	<math><mrow>
 	<munderover>
 		<mo>&prod;</mo>
 		<mrow>%s</mrow><mrow>%s</mrow>
 	</munderover>
 	<mrow></mrow>
-	</mrow></mstyle></math>
+	</mrow></math>
 	""" % (self.children[0].emit_mathml(),
 		   self.children[1].emit_mathml()) + ''.join(i.emit_html() for i in self.children[2:])
 
@@ -271,13 +271,13 @@ class Int(Node):
 	def emit_html(self):
 		# return "∏"
 		return """
-	<math><mstyle displaystyle="true"><mrow>
+	<math><mrow>
 	<munderover>
 		<mo>&int;</mo>
 		<mrow>%s</mrow><mrow>%s</mrow>
 	</munderover>
 	<mrow></mrow>
-	</mrow></mstyle></math>
+	</mrow></math>
 	""" % (self.children[0].emit_mathml(),
 		   self.children[1].emit_mathml()) + ''.join(i.emit_html() for i in self.children[2:])
 
