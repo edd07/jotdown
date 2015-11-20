@@ -1,3 +1,9 @@
+/*
+Stylesheet for web and print
+Based on the Solarized color scheme by Ethan Schoonover
+http://ethanschoonover.com/solarized
+*/
+
 @media screen {
 	html {
 		background-color: #eee8d5;
@@ -55,8 +61,7 @@ a {
 	color: #268bd2;
 }
 
-.math {
-	font-family: georgia, times, serif;
+div.math {
 	padding: 16px;
 	text-align: center;
 	border: #859900 solid 1px;
@@ -64,18 +69,17 @@ a {
 }
 
 @media screen {
-	.math {
+	div.math {
 		background-color: #eee8d5;
 	}
 }
 
-q {
-	font-family: georgia, times, serif;
-	quotes: none;
+.math, code {
+	color: #586e75;
 }
 
-.math, q, code {
-	color: #586e75;
+.math {
+	font-family: georgia, times, serif;
 }
 
 .console {
@@ -122,6 +126,10 @@ li {
 
 li span {
 	color: #657b83;
+}
+
+.references li {
+
 }
 
 blockquote {
