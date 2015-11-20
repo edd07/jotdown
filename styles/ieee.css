@@ -1,0 +1,189 @@
+/*
+Stylesheet for print
+Intended to imitate the IEEE Manuscript Template for Conference Proceedings
+http://www.ieee.org/conferences_events/conferences/publishing/templates.html
+
+Browser support
+---------------
+As of November 2015, rendering document with this stylesheet is problematic. Webkit browsers do not support printing
+documents with columns (https://code.google.com/p/chromium/issues/detail?id=99358). Firefox does not support the
+column-span property necessary for the h1 heading and the autors' names blockquote without modifying the markup
+(https://developer.mozilla.org/en-US/docs/Web/CSS/column-span). The browser I've tested that comes closest to rendering
+it correctly is Microsoft Edge.
+
+Fonts
+-----
+For accurately reproducing the equation style used in most scientific papers due to LATEX, the Computer Modern Unicode
+typeface is recommended. Particularly, the CMU serif font is used below (http://cm-unicode.sourceforge.net/)
+*/
+
+@page {
+	margin: 19.05mm 15.75mm 25.40mm 15.75mm;
+}
+
+body {
+	font-family: "Times New Roman", serif;
+	column-count: 2;
+	-moz-column-count: 2;
+	-webkit-column-count: 2;
+	column-fill: balance;
+	-moz-column-fill: balance;
+	column-gap: 2em;
+	-moz-column-gap: 2em;
+	-webkit-column-gap: 2em;
+	text-align: justify;
+}
+
+h1 {
+	font-family: "Times New Roman", serif;
+	font-weight: bold;
+	font-size: 24pt;
+	text-align: center;
+	column-span: all;
+	-webkit-column-span: all;
+	-moz-column-span: all;
+	counter-reset: h2count;
+}
+
+h2 {
+	font-variant: small-caps;
+	font-size: 10pt;
+	font-weight: normal;
+	page-break-after: avoid;
+	text-align: center;
+	counter-increment: h2count;
+}
+
+h2::before {
+	content: counter(h2count, upper-roman) ". ";
+}
+
+p {
+	font-size: 10pt;
+	orphans: 2;
+	widows: 2;
+	text-indent: 5.08mm;
+}
+
+.math, math{
+	font-family: "CMU Serif", serif;
+	font-size: 10pt;
+}
+
+blockquote {
+	margin:0;
+	font-style: italic;
+	padding: 2em;
+	font-size: 10pt;
+	font-family: "Times New Roman", serif;
+}
+
+blockquote:first-of-type {
+	font-weight: bold;
+	font-style: normal;
+	font-size: 9pt;
+}
+
+blockquote:first-of-type::before {
+	content: 'Abstract - ';
+	font-style: italic;
+	padding: 0;
+	margin: 0;
+}
+
+/* Author names. Very hacky, but it can be made to work */
+table:first-of-type {
+	padding: 2em;
+	margin: 0;
+	text-align: center;
+	font-style: normal;
+	border: 0;
+	column-span: all;
+	-webkit-column-span: all;
+	-moz-column-span: all;
+}
+
+ol {
+	counter-reset: olcount;
+	margin: 0;
+	padding: 0;
+	font-size: 10pt;
+}
+
+ol li {
+	padding-left: 5.08mm;
+	list-style: none;
+	counter-increment: olcount;
+}
+
+ol li::before {
+	content: counter(olcount) ") ";
+	font-style: italic;
+}
+
+ul {
+	counter-reset: ulcount;
+	list-style: round;
+}
+
+a {
+	color: #000000;
+	text-decoration: none;
+}
+
+hr {
+	color: #FFFFFF;
+	border-color: #FFFFFF;
+	background-color: #FFFFFF;
+	column-break-after: always;
+	border: 0;
+	height: 0;
+}
+
+cite {
+	font-style: normal;
+}
+
+footer {
+	font-size: 8pt;
+	counter-reset: refcount;
+}
+
+footer::before {
+	content: 'References';
+	display: block;
+
+	/* Copied from h2 */
+	font-variant: small-caps;
+	font-size: 10pt;
+	font-weight: normal;
+	page-break-after: avoid;
+	text-align: center;
+}
+
+footer ol {
+	margin-left: 6.4mm;
+	font-size: inherit;
+}
+
+footer li {
+	margin: 0;
+	padding:0;
+	counter-increment: refcount;
+	list-style: none;
+	font-size: inherit;
+}
+
+footer li::before {
+	content: "[" counter(refcount, decimal) "]";
+	margin: 0 0 0 -6.4mm;
+	padding: 0;
+	font-size: inherit;
+	display: block;
+	clear: none;
+	width: 6.4mm;
+	float: left;
+	font-style: normal;
+}
+
+

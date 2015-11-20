@@ -15,6 +15,14 @@ argparser.add_argument('-c', '--citations', action='store_true')
 args = argparser.parse_args()
 
 with open(args.input, 'r') as f, open(args.output, 'wb') as fout:
+
+	# Use a built-in style file before attempting to load a custom one
+	builtin_stylesheet = os.path.join(own_directory, 'styles', args.style + '.css')
+	if os.path.isfile(builtin_stylesheet):
+		stylesheet = builtin_stylesheet
+	else:
+		stylesheet = args.style
+
 	doc = parse(f)
 	doc.name = args.input.split('.')[0]  # Remove the extension for the title of the document
-	fout.write(doc.emit_html(css=args.style, ref_style=args.citations))
+	fout.write(doc.emit_html(css=stylesheet, ref_style=args.citations))
