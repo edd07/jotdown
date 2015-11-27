@@ -161,16 +161,19 @@ def parse_text(text):
 			node_stack[-1].children.append(ImplicitEmail(groups[0]))
 
 		elif token == "Link":
-			node_stack[-1].children.append(Link(*groups))
+			text, href = groups
+			node_stack[-1].children.append(Link(parse_text(text), href))
 
 		elif token == "ReferenceLink":
-			text, ref_key = groups
-			node_stack[-1].children.append(ReferenceLink(*groups))
+			cited_text, ref_key = groups
+			node_stack[-1].children.append(ReferenceLink(parse_text(cited_text), ref_key))
 			globalv.references[ref_key] = None  # Save its place in the OrderedDict
 
 		elif token == "ReferenceDef":
-			ref_key, text = groups
-			globalv.references[ref_key] = Node(parse_text(text)), text
+			ref_key, referente_text = groups
+
+			# TODO: Should parse on emit, or only when reference mode is enabled
+			globalv.references[ref_key] = Node(parse_text(text)), reference_text
 
 		elif token == "Image":
 			node_stack[-1].children.append(Image(*groups))

@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 import html
 
-# Abstract ---------------------------------
 import jotdown.globalv as globalv
 
-
-class Node():
+# Abstract ---------------------------------
+class Node:
 	def __init__(self, children=None):
 		self.children = children if children else []
 
@@ -183,18 +182,20 @@ class TableCell(Node):
 		       ''.join(i.emit_html(**kwargs) for i in self.children) + "</td>"
 
 
-class Link(TextNode):
-	def __init__(self, text, url):
-		super().__init__(text)
+class Link(Node):
+	def __init__(self, linked_text, url):
+		super().__init__([linked_text])
 		self.url = url
+		self.linked_text = linked_text
 
 	def emit_html(self, **kwargs):
-		return "<a href=\"" + self.url + "\">" + self.text + "</a>"
+		return "<a href=\"" + self.url + "\">" + self.linked_text.emit_html() + "</a>"
 
 
-class ReferenceLink(TextNode):
-	def __init__(self, text, ref_key):
-		super().__init__(text)
+class ReferenceLink(Node):
+	def __init__(self, cited_node, ref_key):
+		super().__init__([cited_node])
+		self.cited_node = cited_node
 		self.ref_key = ref_key
 
 	def emit_html(self, ref_style=False, **kwargs):
@@ -202,10 +203,10 @@ class ReferenceLink(TextNode):
 			raise Exception("Missing definition for reference '%s'" % self.ref_key)
 		if ref_style:
 			place = list(globalv.references.keys()).index(self.ref_key) + 1
-			return '%s<cite>[<a href="#%s">%d</a>]</cite>' % (self.text, self.ref_key, place)
+			return '%s<cite>[<a href="#%s">%d</a>]</cite>' % (self.cited_node.emit_html(), self.ref_key, place)
 		else:
 			_, href = globalv.references[self.ref_key]
-			return '<a href="%s">%s</a>' % (html.escape(href), self.text)
+			return '<a href="%s">%s</a>' % (html.escape(href), self.cited_node)
 
 
 class Image(Node):
