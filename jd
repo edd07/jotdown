@@ -12,9 +12,15 @@ argparser.add_argument('input')
 argparser.add_argument('-o', '--output', default='out.html')
 argparser.add_argument('-s', '--style', default=os.path.join(own_directory, 'styles/solarized.css'))
 argparser.add_argument('-c', '--citations', action='store_true')
+argparser.add_argument('--debug', action='store_true')
 args = argparser.parse_args()
 
-with open(args.input, 'r') as f, open(args.output, 'wb') as fout:
+if args.debug:
+	fout_name = args.output + '.debug'
+else:
+	fout_name = args.output
+
+with open(args.input, 'r') as f, open(fout_name, 'wb') as fout:
 
 	# Use a built-in style file before attempting to load a custom one
 	builtin_stylesheet = os.path.join(own_directory, 'styles', args.style + '.css')
@@ -25,4 +31,8 @@ with open(args.input, 'r') as f, open(args.output, 'wb') as fout:
 
 	doc = parse(f)
 	doc.name = args.input.split('.')[0]  # Remove the extension for the title of the document
-	fout.write(doc.emit_html(css=stylesheet, ref_style=args.citations))
+
+	if args.debug:
+		fout.write(bytes(doc.emit_debug(level=0, ref_style=args.citations), 'utf-8'))
+	else:
+		fout.write(bytes(doc.emit_html(css=stylesheet, ref_style=args.citations), 'utf-8'))

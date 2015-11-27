@@ -9,6 +9,9 @@ class Node():
 	def __init__(self, children=None):
 		self.children = children if children else []
 
+	def emit_debug(self, level, **kwargs):
+		return ('\t' * level) + type(self).__name__ + '\n' + ''.join(i.emit_debug(level + 1, **kwargs) for i in self.children)
+
 
 class TextNode(Node):
 	def __init__(self, text):
@@ -17,6 +20,14 @@ class TextNode(Node):
 
 	def emit_html(self, **kwargs):
 		return html.escape(self.text, quote=True)
+
+	def emit_debug(self, level, **kwargs):
+		summary = repr(self.text[:50])
+		if len(self.text) > len(summary):
+			summary += '...'
+		res = ('\t' * level) + type(self).__name__ + ' ' + summary  + '\n'
+		res += ''.join(i.emit_debug(level + 1, **kwargs) for i in self.children)
+		return res
 
 # For blocks -------------------------------------------------------------------------
 
@@ -34,7 +45,7 @@ class Document(Node):
 			if kwargs['ref_style']:
 				res += '<footer>' + ReferenceList().emit_html(**kwargs) + '</footer>'
 			res += "</body></html>"
-			return res.encode('utf-8')
+			return res
 
 
 class Heading(Node):
@@ -255,7 +266,7 @@ class Strikethrough(Node):
 
 class MathInline(Node):
 	def emit_html(self, **kwargs):
-		return '<span class="math">' + ''.join(i.emit_html(**kwargs) for i in self.children) + '</q>'
+		return '<span class="math">' + ''.join(i.emit_html(**kwargs) for i in self.children) + '</span>'
 
 
 class Parenthesis(Node):
