@@ -162,18 +162,18 @@ def parse_text(text):
 
 		elif token == "Link":
 			text, href = groups
-			node_stack[-1].children.append(Link(parse_text(text), href))
+			node_stack[-1].children.append(Link(Node(parse_text(text)), href))
 
 		elif token == "ReferenceLink":
 			cited_text, ref_key = groups
-			node_stack[-1].children.append(ReferenceLink(parse_text(cited_text), ref_key))
+			node_stack[-1].children.append(ReferenceLink(Node(parse_text(cited_text)), ref_key))
 			globalv.references[ref_key] = None  # Save its place in the OrderedDict
 
 		elif token == "ReferenceDef":
-			ref_key, referente_text = groups
+			ref_key, reference_text = groups
 
 			# TODO: Should parse on emit, or only when reference mode is enabled
-			globalv.references[ref_key] = Node(parse_text(text)), reference_text
+			globalv.references[ref_key] = Node(parse_text(reference_text)), reference_text
 
 		elif token == "Image":
 			node_stack[-1].children.append(Image(*groups))
