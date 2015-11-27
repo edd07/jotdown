@@ -17,11 +17,17 @@ def parse(file):
 
 		elif block_is_heading(block):
 			text = block[:-1]
-			nodes.append(Heading(map(parse_text, text)))
+			subnodes = []
+			for line in text:
+				subnodes.append(Node(parse_text(line)))
+			nodes.append(Heading(subnodes))
 
 		elif block_is_subheading(block):
 			text = block[:-1]
-			nodes.append(Subheading(map(parse_text, text)))
+			subnodes = []
+			for line in text:
+				subnodes.append(Node(parse_text(line)))
+			nodes.append(Subheading(subnodes))
 
 		elif block_is_list(block):
 			list_stack = []
@@ -45,7 +51,7 @@ def parse(file):
 						closed_list = list_stack.pop()
 						list_stack[-1].children[-1].children.append(closed_list)
 
-				list_stack[-1].children.append(ListItem([parse_text(list_item_text(line))]))
+				list_stack[-1].children.append(ListItem(parse_text(list_item_text(line))))
 
 			while len(list_stack) > 1:
 				closed_list = list_stack.pop()
@@ -61,7 +67,7 @@ def parse(file):
 
 		elif block_is_md_table(block):
 			header_content = map(parse_text, block[0].split('|'))
-			header = [TableHeader([i]) for i in header_content]
+			header = [TableHeader(i) for i in header_content]
 
 			alignment = list(map(cell_align, block[1].split('|')))
 			table = Table([TableRow(header)])
@@ -69,7 +75,7 @@ def parse(file):
 			for line in block[2:]:
 				cells = []
 				for content, align in zip(line.split('|'), alignment):
-					cells.append(TableCell(align, [parse_text(content)]))
+					cells.append(TableCell(align, parse_text(content)))
 				table.children.append(TableRow(cells))
 
 			nodes.append(table)
@@ -80,10 +86,19 @@ def parse(file):
 					return parse_text(line[1:])
 				else:
 					return parse_text(line)
-			nodes.append(Blockquote(map(remove_gt, block)))
+			subnodes = []
+			for line in block:
+				subnodes.append(Node(remove_gt(line)))
+			nodes.append(Blockquote(subnodes))
 
 		else:
-			nodes.append(Paragraph(list(map(parse_text, block))))
+			subnodes = []
+			for line in block:
+				text_nodes = parse_text(line)
+				if text_nodes:
+					subnodes.append(Node(text_nodes))
+			if subnodes:
+				nodes.append(Paragraph(subnodes))
 
 	return Document(nodes)
 
@@ -91,8 +106,9 @@ def parse(file):
 def parse_text(text):
 	# (Formattable text)-level parser
 
-	stack = ['Text_OPEN']
-	node_stack = [Text()]
+	# Start the parser up with a dummy top-level node
+	stack = ['Dummy_OPEN']
+	node_stack = [Node()]
 	debug_text = text[:50]
 
 	for token, groups in get_text_tokens(text):
@@ -154,14 +170,14 @@ def parse_text(text):
 
 		elif token == "ReferenceDef":
 			ref_key, text = groups
-			globalv.references[ref_key] = parse_text(text), text
+			globalv.references[ref_key] = Node(parse_text(text)), text
 
 		elif token == "Image":
 			node_stack[-1].children.append(Image(*groups))
 
 	if len(stack) > 1:
 		raise Exception("Missing closing tag for %s at %s" % (stack[-1], repr(debug_text)))
-	return node_stack[0]
+	return node_stack[0].children
 
 
 def parse_math(text):

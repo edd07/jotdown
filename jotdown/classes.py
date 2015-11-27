@@ -9,6 +9,9 @@ class Node():
 	def __init__(self, children=None):
 		self.children = children if children else []
 
+	def emit_html(self, **kwargs):
+		return ''.join(i.emit_html(**kwargs) for i in self.children)
+
 	def emit_debug(self, level, **kwargs):
 		return ('\t' * level) + type(self).__name__ + '\n' + ''.join(i.emit_debug(level + 1, **kwargs) for i in self.children)
 
@@ -142,11 +145,6 @@ class MathBlock(Node):
 class Blockquote(Node):
 	def emit_html(self, **kwargs):
 		return "<blockquote>" + "<br>".join(i.emit_html(**kwargs) for i in self.children) + "</blockquote>"
-
-
-class Text(Node):
-	def emit_html(self, **kwargs):
-		return ''.join(i.emit_html(**kwargs) for i in self.children)
 
 
 class Math(Node):
