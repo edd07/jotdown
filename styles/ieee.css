@@ -93,14 +93,19 @@ blockquote:first-of-type::before {
 
 /* Author names. Very hacky, but it can be made to work */
 table:first-of-type {
-	padding: 2em;
-	margin: 0;
-	text-align: center;
-	font-style: normal;
-	border: 0;
+	width: 100%;
+	margin: auto;
 	column-span: all;
 	-webkit-column-span: all;
 	-moz-column-span: all;
+}
+
+table:first-of-type td, table:first-of-type th {
+	padding: 0 1em 0 1em;
+	text-align: center;
+	font-style: normal;
+	border: 0;
+	font-weight: normal;
 }
 
 ol {
