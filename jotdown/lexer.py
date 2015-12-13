@@ -267,6 +267,6 @@ def lex_olist(m):
 			for char in numeral:
 				if char not in string.ascii_letters:
 					return None
-				value = value * 26 + (string.ascii_lowercase.index(char.lower()))
+				value = value * 26 + (string.ascii_lowercase.index(char.lower()) + 1)
 			case = 'a' if numeral.lower() == numeral else 'A'
-			return case, value + 1
+			return case, value
