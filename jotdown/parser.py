@@ -34,18 +34,26 @@ def parse(file):
 			indent_stack = [-1]
 
 			for line in block:
-				m = match(re_listitem, line)
+				ordered = False
+				m = re_ulistitem.match(line)
+				if not m:
+					ordered = True
+					m = re_olistitem.match(line)
+
 				new_indent = len(m.group(1))
 
 				if new_indent > indent_stack[-1]:
+					# Need to create new nested lists
 					while new_indent > indent_stack[-1]:
 						indent_stack.append(indent_stack[-1] + 1)
-						olist_match = re_olistitem.match(line)
-						if olist_match:
-							list_stack.append(OList(start=olist_match.group(2)))
+
+						if ordered:
+							list_type, start = lex_olist(m)
+							list_stack.append(OList(list_type=list_type, start=start))
 						else:
 							list_stack.append(UList())
 				elif new_indent < indent_stack[-1]:
+					# Need to close nested lists
 					while new_indent < indent_stack[-1]:
 						indent_stack.pop()
 						closed_list = list_stack.pop()
@@ -53,6 +61,7 @@ def parse(file):
 
 				list_stack[-1].children.append(ListItem(parse_text(list_item_text(line))))
 
+			# Finih closing remaining nested lists
 			while len(list_stack) > 1:
 				closed_list = list_stack.pop()
 				list_stack[-1].children.append(closed_list)
@@ -66,8 +75,8 @@ def parse(file):
 			nodes.append(MathBlock([parse_math(replace_math('\n'.join(block[1:-1])))]))
 
 		elif block_is_md_table(block):
-			header_content = map(parse_text, block[0].split('|'))
-			header = [TableHeader(i) for i in header_content]
+			header_content = block[0].split('|')
+			header = [TableHeader(parse_text(i)) for i in header_content]
 
 			alignment = list(map(cell_align, block[1].split('|')))
 			table = Table([TableRow(header)])

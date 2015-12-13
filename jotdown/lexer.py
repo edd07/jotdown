@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
+import string
 from re import sub, compile, match, UNICODE
+
+from jotdown.roman import fromRoman, InvalidRomanNumeralError
 from jotdown.regex import *
 
 # Init RE objects
 re_flags = UNICODE
-re_listitem = compile(r'^(\t*)([\*\-\+]|\d+\.)\s+', flags=re_flags)
 re_ulistitem = compile(r'^(\t*)[\*\-\+]\s+', flags=re_flags)
-re_olistitem = compile(r'^(\t*)(\d+)\.\s+', flags=re_flags)
+re_olistitem = compile(r'^(\t*)(\w+)\.\s+', flags=re_flags)
 re_code_amb = compile(r'^```\s*$', flags=re_flags)
 re_code_open = compile(r'^```([\w\d+#][\w\d+#\s]*)$', flags=re_flags)
 re_math_open = compile(r'^«««\s*$', flags=re_flags)
@@ -197,8 +199,13 @@ def block_is_subheading(block):
 
 def block_is_list(block):
 	for line in block:
-		if not match(re_listitem, line):
-			return False
+		if re_ulistitem.match(line):
+			continue
+		m = re_olistitem.match(line)
+		if m:
+			if lex_olist(m):
+				continue
+		return False
 	return True
 
 
@@ -241,3 +248,25 @@ def cell_align(cell):
 		return 2  # Right
 	else:
 		return 1  # Center
+
+
+def lex_olist(m):
+	"""Attempt to parse a numeral on the list item, be it decimal, roman or alphabetical"""
+	# TODO: support for non-latin alphabet numbering? HTML doesn't seem to support it
+	_, numeral = m.groups()
+
+	try:
+		return '1', int(numeral)  # is it an integer?
+	except ValueError:
+		try:
+			value = fromRoman(numeral.upper())  # is it a roman numeral?
+			case = 'i' if numeral.lower() == numeral else 'I'
+			return case, value
+		except InvalidRomanNumeralError:
+			value = 0  # is it just a letter?
+			for char in numeral:
+				if char not in string.ascii_letters:
+					return None
+				value = value * 26 + (string.ascii_lowercase.index(char.lower()))
+			case = 'a' if numeral.lower() == numeral else 'A'
+			return case, value + 1

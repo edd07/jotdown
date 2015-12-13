@@ -95,17 +95,30 @@ blockquote:first-of-type::before {
 table:first-of-type {
 	width: 100%;
 	margin: auto;
+	margin-bottom: 2em;
 	column-span: all;
 	-webkit-column-span: all;
 	-moz-column-span: all;
+	table-layout: fixed;
+	border: none;
 }
 
 table:first-of-type td, table:first-of-type th {
-	padding: 0 1em 0 1em;
+	padding: 0 0.5em 0 0.5em;
 	text-align: center;
 	font-style: normal;
+	font-size: 9pt;
 	border: 0;
 	font-weight: normal;
+}
+
+table {
+	font-size: 10pt;
+	border-collapse: collapse;
+}
+
+table, td, th {
+	border: 1px #000000 solid;
 }
 
 ol {
@@ -124,6 +137,23 @@ ol li {
 ol li::before {
 	content: counter(olcount) ") ";
 	font-style: italic;
+}
+
+/* Need separate attr selectors for different list styles because attr() is not that powerful */
+ol[type='A']>li::before {
+	content: counter(olcount, upper-alpha) ") ";
+}
+
+ol[type='a']>li::before {
+	content: counter(olcount, lower-alpha) ") ";
+}
+
+ol[type='I']>li::before {
+	content: counter(olcount, upper-roman) ") ";
+}
+
+ol[type='i']>li::before {
+	content: counter(olcount, lower-roman) ") ";
 }
 
 ul {

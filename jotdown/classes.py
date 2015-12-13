@@ -79,12 +79,13 @@ class UList(List):
 
 
 class OList(List):
-	def __init__(self, children=None, start=1):
+	def __init__(self, children=None, list_type='1', start=1):
 		super().__init__(children)
 		self.start = start
+		self.list_type = list_type
 
 	def emit_html(self, **kwargs):
-		res = "<ol start=\"%s\">" % self.start
+		res = '<ol start="%s" type="%s">' % (self.start, self.list_type)
 		for item in self.children:
 			res += item.emit_html(**kwargs)
 		res += "</ol>"

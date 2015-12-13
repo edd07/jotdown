@@ -13,7 +13,10 @@ List of things:
 Another list of things:
 
 1. Number one
-	1. Number one nested
+	A. Number A nested
+		I. Number I nested
+			b. Number b nested
+				ii. Number ii nested
 2. Number two
 	* Nested unnumbered
 3. Number three
@@ -76,7 +79,7 @@ Tables
 
 A table with inline formatting:
 
-This column is left aligned	(default)			| Right	| Center
+This column is left aligned	(default) «x = 2»	| Right	| Center
 ------------------------------------------------|------:|:-------:
 `some code here`		    					| 200 	| center
 «sum[2 n t_j]» math here		            	| 500	| aligned
