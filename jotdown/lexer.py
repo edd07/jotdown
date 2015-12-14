@@ -7,6 +7,8 @@ from jotdown.regex import *
 
 # Init RE objects
 re_flags = UNICODE
+re_heading_underline = compile(r'(-+|=+)\s*\n', flags=re_flags)
+re_heading_hashes = compile(r'(#+)([^#]*)#*', flags=re_flags)
 re_ulistitem = compile(r'^(\t*)[\*\-\+]\s+', flags=re_flags)
 re_olistitem = compile(r'^(\t*)(\w+)\.\s+', flags=re_flags)
 re_code_amb = compile(r'^```\s*$', flags=re_flags)
@@ -182,19 +184,16 @@ def block_is_horizontal_rule(block):
 
 
 def block_is_heading(block):
-	last_line = block[-1]
-	for char in last_line:
-		if char not in "=\n":
-			return False
-	return True
+	if _block_is_underline_heading(block):
+		return True
+	return block[0][0] == '#' and len(block) == 1
 
 
-def block_is_subheading(block):
-	last_line = block[-1]
-	for char in last_line:
-		if char not in "-\n":
-			return False
-	return True
+def _block_is_underline_heading(block):
+	last_line = block[-1].rstrip()
+	if all(map(lambda char: char == '-', last_line)):
+		return True
+	return all(map(lambda char: char == '=', last_line))
 
 
 def block_is_list(block):
@@ -270,3 +269,13 @@ def lex_olist(m):
 				value = value * 26 + (string.ascii_lowercase.index(char.lower()) + 1)
 			case = 'a' if numeral.lower() == numeral else 'A'
 			return case, value
+
+
+def lex_heading(block):
+	if _block_is_underline_heading(block):
+		level = 1 if block[-1][0] == '=' else 2
+		return level, block[:-1]
+	else:
+		m = re_heading_hashes.match(block[0])
+		hashes, text = m.groups()
+		return min(len(hashes), 6), (text,)

@@ -16,18 +16,11 @@ def parse(file):
 			nodes.append(HorizontalRule())
 
 		elif block_is_heading(block):
-			text = block[:-1]
+			level, text = lex_heading(block)
 			subnodes = []
 			for line in text:
 				subnodes.append(Node(parse_text(line)))
-			nodes.append(Heading(subnodes))
-
-		elif block_is_subheading(block):
-			text = block[:-1]
-			subnodes = []
-			for line in text:
-				subnodes.append(Node(parse_text(line)))
-			nodes.append(Subheading(subnodes))
+			nodes.append(Heading(level, subnodes))
 
 		elif block_is_list(block):
 			list_stack = []

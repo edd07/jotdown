@@ -51,13 +51,12 @@ class Document(Node):
 
 
 class Heading(Node):
-	def emit_html(self, **kwargs):
-		return "<h1>" + '<br>'.join(i.emit_html(**kwargs) for i in self.children) + "</h1>"
+	def __init__(self, level, children=None):
+		super().__init__(children)
+		self.level = level
 
-
-class Subheading(Node):
 	def emit_html(self, **kwargs):
-		return "<h2>" + '<br>'.join(i.emit_html(**kwargs) for i in self.children) + "</h2>"
+		return "<h%d>" % self.level + '<br>'.join(i.emit_html(**kwargs) for i in self.children) + "</h%d>" % self.level
 
 
 class HorizontalRule(Node):
