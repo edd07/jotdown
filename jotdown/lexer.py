@@ -219,14 +219,33 @@ def block_is_math(block):
 def block_is_md_table(block):
 	table_cols = len(block[0].split('|'))
 
-	if table_cols < 2:
+	if table_cols < 2 or len(block) < 3:
 		return False
 
-	for line in block:
+	md_table = block
+	if len(block) >= 5:
+		# Does it have a caption?
+		for char in block[-2]:
+			if char not in '- \t\n':
+				break
+		else:
+			md_table = block[:-2]
+
+	# The same number of columns for every row
+	for line in md_table:
 		row_cols = len(line.split('|'))
 
 		if row_cols != table_cols:
 			return False
+
+	# There must be at least three dashes in the "separator" row, and only have dashes, colons and whitespace
+	for cell in md_table[1].split('|'):
+		for char in cell:
+			if char not in '\n \t:-':
+				return False
+		if cell.count('-') < 3:
+			return False
+
 	return True
 
 
@@ -278,4 +297,4 @@ def lex_heading(block):
 	else:
 		m = re_heading_hashes.match(block[0])
 		hashes, text = m.groups()
-		return min(len(hashes), 6), (text,)
+		return min(len(hashes), 6), (text.strip(),)

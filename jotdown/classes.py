@@ -3,6 +3,7 @@ import html
 
 import jotdown.globalv as globalv
 
+
 # Abstract ---------------------------------
 class Node:
 	def __init__(self, children=None):
@@ -152,8 +153,15 @@ class Math(Node):
 
 
 class Table(Node):
+	def __init__(self, caption, children=None):
+		super().__init__(children)
+		self.caption = caption
+
 	def emit_html(self, **kwargs):
-		return "<table>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</table>"
+		caption_html = ''
+		if self.caption:
+			caption_html = '<caption>' + ''.join(i.emit_html(**kwargs) for i in self.caption) + '</caption>'
+		return '<table>' + caption_html + ''.join(i.emit_html(**kwargs) for i in self.children) + '</table>'
 
 
 class TableRow(Node):

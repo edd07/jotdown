@@ -4,7 +4,7 @@ Jotdown test file, this is a heading
 Subheading
 ----------
 
-# Hash h1 heading #
+# Hash h1 heading
 
 ### Third subheading ###
 
@@ -88,6 +88,8 @@ This column is left aligned	(default) «x = 2»	| Right	| Center
 `some code here`		    					| 200 	| center
 «sum[2 n t_j]» math here		            	| 500	| aligned
 Some *old*-__fashioned__ text               	| 700 	| column
+------------------------------------------------------------------
+This is a caption for the table
 
 Links and images
 ================

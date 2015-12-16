@@ -72,9 +72,21 @@ def parse(file):
 			header = [TableHeader(parse_text(i)) for i in header_content]
 
 			alignment = list(map(cell_align, block[1].split('|')))
-			table = Table([TableRow(header)])
 
-			for line in block[2:]:
+			# Check if there is a caption
+			md_table = block[2:]
+			caption = None
+			if len(block) > 5:
+				for char in block[-2]:
+					if char not in '\t\n -':
+						break
+				else:
+					caption = parse_text(block[-1])
+					md_table = block[2:-2]
+
+			table = Table(caption, [TableRow(header)])
+
+			for line in md_table:
 				cells = []
 				for content, align in zip(line.split('|'), alignment):
 					cells.append(TableCell(align, parse_text(content)))

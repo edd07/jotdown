@@ -157,6 +157,11 @@ td, th {
 	padding: 5px;
 }
 
+caption {
+	caption-side: bottom;
+	text-align: center;
+}
+
 @media screen {
 	th, th * {
 		background-color: #6c71c4;
