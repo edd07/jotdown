@@ -9,7 +9,7 @@ As of November 2015, rendering document with this stylesheet is problematic. Web
 documents with columns (https://code.google.com/p/chromium/issues/detail?id=99358). Firefox does not support the
 column-span property necessary for the h1 heading and the autors' names blockquote without modifying the markup
 (https://developer.mozilla.org/en-US/docs/Web/CSS/column-span). The browser I've tested that comes closest to rendering
-it correctly is Microsoft Edge.
+it correctly is Microsoft Edge, but it does not work with MathML.
 
 Fonts
 -----
@@ -34,6 +34,7 @@ body {
 	text-align: justify;
 
 	counter-reset: tablecount;
+	counter-reset: figurecount;
 }
 
 h1 {
@@ -64,8 +65,18 @@ h3 {
 	font-size: 10pt;
 	font-style: italic;
 	font-weight: normal;
+	margin: 0.2cm 0 0.1cm 0.5cm;
+	padding: 0;
+	page-break-after: avoid;
+}
+
+h4 {
+	font-size: 10pt;
+	font-style: italic;
+	font-weight: normal;
 	margin: 0.2cm 0 0.1cm 0;
 	padding: 0;
+	page-break-after: avoid;
 }
 
 p {
@@ -75,7 +86,7 @@ p {
 	text-indent: 5.08mm;
 }
 
-.math, math{
+.math, math {
 	font-family: "CMU Serif", serif;
 	font-size: 10pt;
 }
@@ -88,6 +99,7 @@ blockquote {
 	font-family: "Times New Roman", serif;
 }
 
+/* Abstract */
 blockquote:first-of-type {
 	font-weight: bold;
 	font-style: normal;
@@ -101,11 +113,10 @@ blockquote:first-of-type::before {
 	margin: 0;
 }
 
-/* Author names. Very hacky, but it can be made to work */
+/* Author names. */
 table:first-of-type {
 	width: 100%;
-	margin: auto;
-	margin-bottom: 2em;
+	margin: 0.0635cm auto 0 auto;
 	column-span: all;
 	-webkit-column-span: all;
 	-moz-column-span: all;
@@ -117,14 +128,22 @@ table:first-of-type td, table:first-of-type th {
 	padding: 0 0.5em 0 0.5em;
 	text-align: center;
 	font-style: normal;
-	font-size: 9pt;
 	border: 0;
 	font-weight: normal;
+}
+
+table:first-of-type th {
+	font-size: 11pt;
+}
+
+table:first-of-type tr {
+	font-size: 10pt;
 }
 
 table {
 	font-size: 10pt;
 	border-collapse: collapse;
+	margin: auto;
 }
 
 table, td, th {
@@ -139,7 +158,7 @@ caption {
 }
 
 caption::before {
-	content: 'Table' counter(tablecount) '. ';
+	content: 'Table ' counter(tablecount, upper-roman) '. ';
 }
 
 
@@ -196,6 +215,30 @@ hr {
 	column-break-after: always;
 	border: 0;
 	height: 0;
+}
+
+img {
+	width: 100%;
+}
+
+/*TODO: floating figure*/
+figure {
+	width: 100%;
+	padding: 0;
+	margin: 1em 0 1em 0;
+}
+
+figcaption {
+	counter-increment: figurecount;
+	font-size: 10pt;
+	caption-side: bottom;
+	text-align: center;
+	font-variant: small-caps;
+	padding: 1em;
+}
+
+figcaption::before {
+	content: 'Figure ' counter(figurecount, upper-roman) '. ';
 }
 
 cite {

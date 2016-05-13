@@ -225,7 +225,9 @@ class Image(Node):
 		self.title = title
 
 	def emit_html(self, **kwargs):
-		return "<img src=\"%s\" title=\"%s\" alt=\"%s\">" % (self.src, self.title, self.alt)
+		# TODO: make figures a command line option
+		return '<figure><img src="%s" title="%s" alt="%s"><figcaption>%s</figcaption></figure>' %\
+		       (self.src, self.title, self.alt, self.title)
 
 
 class ImplicitLink(TextNode):
