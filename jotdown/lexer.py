@@ -5,8 +5,9 @@ from re import sub, compile, match, UNICODE
 from jotdown.roman import fromRoman, InvalidRomanNumeralError
 from jotdown.regex import *
 
+from jotdown.globalv import re_flags
+
 # Init RE objects
-re_flags = UNICODE
 re_heading_underline = compile(r'(-+|=+)\s*\n', flags=re_flags)
 re_heading_hashes = compile(r'(#+)([^#]*)#*', flags=re_flags)
 re_ulistitem = compile(r'^(\t*)[\*\-\+]\s+', flags=re_flags)

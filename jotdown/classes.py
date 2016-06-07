@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import html
+import re
 
 import jotdown.globalv as globalv
 
@@ -57,7 +58,19 @@ class Heading(Node):
 		self.level = level
 
 	def emit_html(self, **kwargs):
-		return "<h%d>" % self.level + '<br>'.join(i.emit_html(**kwargs) for i in self.children) + "</h%d>" % self.level
+		# Sanitize the text for the id
+		ident = ''.join(i.emit_html(**kwargs) for i in self.children).strip()
+		ident = re.sub(r'<[^>]*>', '', ident, flags=globalv.re_flags)
+		ident = re.sub(r'\s', '-', ident, flags=globalv.re_flags)
+		ident = html.escape(ident)
+
+		# Make sure it's unique on the whole document
+		while ident in globalv.html_document_ids:
+			ident += '_'
+		globalv.html_document_ids.add(ident)
+
+		return '<h%d id="%s">' % (self.level, ident)\
+		       + '<br>'.join(i.emit_html(**kwargs) for i in self.children) + "</h%d>" % self.level
 
 
 class HorizontalRule(Node):
