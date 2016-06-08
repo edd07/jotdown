@@ -230,7 +230,7 @@ class ReferenceLink(Node):
 			return '<a href="%s">%s</a>' % (html.escape(href), self.cited_node)
 
 
-class Image(Node):
+class Content(Node):
 	def __init__(self, alt, src, title, children=None):
 		super().__init__(children)
 		self.alt = alt
@@ -238,9 +238,20 @@ class Image(Node):
 		self.title = title
 
 	def emit_html(self, **kwargs):
+		dtype = globalv.content_filetypes(self.src)
+		if dtype == 'image':
+			elem = '<img src="%s" title="%s" alt="%s">' % (self.src, self.title, self.alt)
+		elif dtype == 'audio':
+			elem = '<audio src="%s" controls>%s</audio>' % (self.src, self.alt)
+		elif dtype == 'video':
+			elem = '<video src="%s" controls>%s</video>' % (self.src, self.alt)
+		elif dtype == 'flash':
+			elem = '<object data="%s" type="application/x-shockwave-flash"></object>' % self.src
+		else:
+			elem = '<object data="%s"></object>' % self.src
+
 		# TODO: make figures a command line option
-		return '<figure><img src="%s" title="%s" alt="%s"><figcaption>%s</figcaption></figure>' %\
-		       (self.src, self.title, self.alt, self.title)
+		return '<figure>%s<figcaption>%s</figcaption></figure>' % (elem, self.title)
 
 
 class ImplicitLink(TextNode):
@@ -315,7 +326,7 @@ class Brackets(Node):
 
 class Sum(Node):
 	def emit_html(self, **kwargs):
-		#return "∑"
+		# return "∑"
 		return """
 	<math><mstyle displaystyle="true"><mrow>
 	<munderover>

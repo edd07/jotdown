@@ -100,6 +100,24 @@ This is an implicit email@address.com and a [Link with a custom title and relati
 This is a [reference-style link][ref]. These can be rendered as citations with a command line option, and can have content that does not work [as a link][citation]
 [ref]: http://example.com
 
-This is an obligatory ![picture of a cat](http://placekitten.com/g/300/301 "Title text!")
+Obligatory cat
+--------------
+
+![picture of a cat](http://placekitten.com/g/300/301 "Title text!")
+
+GIFs
+----
+
+![gif](https://upload.wikimedia.org/wikipedia/commons/3/3b/Circle_cos_sin.gif "Sine and cosine")
+
+Audio
+-----
+
+![audio file](https://upload.wikimedia.org/wikipedia/commons/b/b6/Bloop_real.ogg "The Bloop")
+
+Video
+-----
+
+![video](https://upload.wikimedia.org/wikipedia/en/transcoded/c/c3/L%27Arrivee_d%27un_train_en_gare_de_la_Ciotat%2C_1895.ogv/L%27Arrivee_d%27un_train_en_gare_de_la_Ciotat%2C_1895.ogv.480p.webm "L'Arrivée d'un train en gare de La Ciotat")
 
 [citation]: Because this is a citation, *with* **format**

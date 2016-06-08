@@ -144,6 +144,16 @@ blockquote {
 	}
 }
 
+figure {
+	margin: auto;
+	text-align: center;
+}
+
+img, audio, video, object {
+	display: block;
+	margin: auto;
+}
+
 table {
 	margin: auto;
 }
