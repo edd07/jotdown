@@ -1,3 +1,4 @@
+import os
 from collections import OrderedDict
 import re
 import mimetypes
@@ -17,3 +18,10 @@ def content_filetypes(fname):
 		return mtype
 	elif msubtype == 'x-shockwave-flash':
 		return 'flash'
+
+
+def ext_translation(url, fformat):
+	name, ext = os.path.splitext(url)
+	if ext == '.jd':
+		url = name + '.' + fformat
+	return url

@@ -16,11 +16,15 @@ Usage
 
 To parse a single jotdown file (suggested extension: `.jd`), use `jd`:
 
-    $ jd <input_file.jd> [-o <output_file.html>] [-s <custom_stylesheet.css]
+    $ jd <input_file.jd> [-o <output_file>] [-f <format>] [-s <stylesheet>]
     
-The `-o` and `-s` parameters are optional. The output file will be `out.html` if one is not specified.
+The `-o`, `f`, and `-s` parameters are optional. The output filename will be `out` if one is not specified. The default output format is HTML. The default stylesheet is the included Solarized-based theme.
 
-Support for parsing a directory structure and generating index pages is planned but not yet implemented.
+To export a whole directory structure of jotdown files, just pass a directory to `jd`:
+
+    $ jd <directory> [-o <output_directory>] [-f <format>] [-s <stylesheet>]
+
+The `directory` structure will be replicated under `output_directory`, and all `.jd` files will be translated to the specified output format. Links to other `.jd` files are automatically converted to the correct file extension. The stylesheet file will be copied to `output_directory` and all output documents will link to it instead of embedding its text. Other files found in side `directory` will be copied over verbatim. This mode allows, for example, to have a source tree for a website including Jotdown source documents, custom HTML, images, etc. that will be exported with a single command, to a single directory that is ready to be deployed.
 
 A note on encodings
 -------------------
@@ -34,6 +38,17 @@ HTML output, however, *is* hard-coded to be UTF-8. Jotdown's output files are no
 should not be a problem. A `<meta charset="UTF-8">` tag is included in every generated HTML file, so any reasonable
 browser will be able to handle it, special characters and all.
 
+Output formats
+--------------
+
+Jotdown is designed to support output in many different formats. At the time, HTML output is supported (which includes a bit of MathML), as well as a debug mode that allows for inspection of the parse tree. LATEX output is planned, but work has not yet started.
+
+Output style
+------------
+
+Jotdown includes CSS files that will be embedded in every HTML document to style them. The default stylesheet, `solarized.css` is based on the
+[Solarized](http://ethanschoonover.com/solarized) color scheme for maximum readability. A stylesheet is also included to mimic the look of IEEE publications (`ieee.css`), to test and demontstrate Jotdown's readiness for use as a source language in scientific manuscripts.
+
 Browser compatibility
 ---------------------
 
@@ -41,10 +56,3 @@ Some math-related features (namely capital-sigma notation for sums, capital-pi n
 not have a clean way to be marked up as HTML. For this reason, they are output as MathML inside `<math>` tags. MathML is
 supported by Firefox, Opera and Safari, but not by Chrome. Chrome users, be warned. All other expressions are kept as
 pure HTML for maximum compatibility.
-
-Output style
-------------
-
-Jotdown includes a `style.css` file that will be embedded in every HTML document in `<style>` tags if a custom stylesheet is not specified. This file can be
-edited to produce any document style the user wants. The default stylesheet is based on the
-[Solarized](http://ethanschoonover.com/solarized) color scheme for maximum readability.

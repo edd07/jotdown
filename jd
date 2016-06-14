@@ -1,38 +1,85 @@
 #!/usr/bin/env python3
+import shutil
 
+import globalv
 from jotdown.parser import parse
 
 import argparse
 import os
 
+
+def write_file(infile, outfile, fformat='html', debug=False, **kwargs):
+	with open(infile, 'r') as f, open(outfile, 'wb') as fout:
+		doc = parse(f)
+		doc.name = os.path.splitext(os.path.split(infile)[1])[0]
+
+		if debug:
+			fout.write(bytes(doc.emit_debug(**kwargs), 'utf-8'))
+		else:
+			fn = getattr(doc, 'emit_' + fformat)
+			fout.write(bytes(fn(**kwargs), 'utf-8'))
+
 own_directory = os.path.dirname(os.path.abspath(__file__))
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('input')
-argparser.add_argument('-o', '--output', default='out.html')
+argparser.add_argument('-o', '--output', default='out')
+argparser.add_argument('-f', '--format', default='html')
 argparser.add_argument('-s', '--style', default=os.path.join(own_directory, 'styles/solarized.css'))
 argparser.add_argument('-c', '--citations', action='store_true')
 argparser.add_argument('--debug', action='store_true')
 args = argparser.parse_args()
 
-if args.debug:
-	fout_name = args.output + '.debug'
+# Use a built-in style file before attempting to load a custom one
+builtin_stylesheet = os.path.join(own_directory, 'styles', args.style + '.css')
+if os.path.isfile(builtin_stylesheet):
+	stylesheet = builtin_stylesheet
 else:
-	fout_name = args.output
+	stylesheet = args.style
 
-with open(args.input, 'r') as f, open(fout_name, 'wb') as fout:
-
-	# Use a built-in style file before attempting to load a custom one
-	builtin_stylesheet = os.path.join(own_directory, 'styles', args.style + '.css')
-	if os.path.isfile(builtin_stylesheet):
-		stylesheet = builtin_stylesheet
-	else:
-		stylesheet = args.style
-
-	doc = parse(f)
-	doc.name = args.input.split('.')[0]  # Remove the extension for the title of the document
-
+# Parse standalone files
+if os.path.isfile(args.input):
 	if args.debug:
-		fout.write(bytes(doc.emit_debug(level=0, ref_style=args.citations), 'utf-8'))
+		fout_name = args.output + '.debug'
 	else:
-		fout.write(bytes(doc.emit_html(css=stylesheet, ref_style=args.citations), 'utf-8'))
+		fout_name = args.output + '.' + args.format
+
+	write_file(args.input, fout_name, debug=args.debug, format=args.format, ref_style=args.citations, css=stylesheet)
+
+# Parse whole directories
+elif os.path.isdir(args.input):
+	if not os.path.exists(args.output):
+		os.makedirs(args.output)
+	if not os.path.isdir(args.output):
+		raise Exception(args.output + ' exists but is not a directory')
+
+	# Copy the css file over to the new folder
+	stylesheet = shutil.copy(stylesheet, args.output)
+
+	for in_dirpath, dirnames, filenames in os.walk(args.input):
+		out_dirpath = os.path.join(args.output, os.path.relpath(in_dirpath, args.input))
+
+		# Need to create the directories if they dont exist to avoid errors
+		for dname in dirnames:
+			path = os.path.join(out_dirpath, dname)
+			if not os.path.exists(path):
+				os.makedirs(path)
+
+		for in_fname in filenames:
+			if os.path.splitext(in_fname)[1] == '.jd':
+				out_fname = os.path.join(out_dirpath, globalv.ext_translation(in_fname, args.format))
+				write_file(
+					os.path.join(in_dirpath, in_fname),
+					out_fname,
+					debug=args.debug, fformat=args.format,
+					ref_style=args.citations,
+					css=os.path.relpath(stylesheet, out_dirpath), embed_css=False,
+					link_translation=args.format,
+				)
+			else:
+				shutil.copy(os.path.join(in_dirpath, in_fname), os.path.join(out_dirpath, in_fname))
+
+else:
+	raise Exception(args.input + ' does not exist')
+
+

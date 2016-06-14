@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import html
+import os
 import re
 
 import jotdown.globalv as globalv
@@ -13,8 +14,8 @@ class Node:
 	def emit_html(self, **kwargs):
 		return ''.join(i.emit_html(**kwargs) for i in self.children)
 
-	def emit_debug(self, level, **kwargs):
-		return ('\t' * level) + type(self).__name__ + '\n' + ''.join(i.emit_debug(level + 1, **kwargs) for i in self.children)
+	def emit_debug(self, indent=0, **kwargs):
+		return ('\t' * indent) + type(self).__name__ + '\n' + ''.join(i.emit_debug(indent + 1, **kwargs) for i in self.children)
 
 
 class TextNode(Node):
@@ -41,15 +42,20 @@ class Document(Node):
 		super().__init__(children)
 		self.name = name
 
-	def emit_html(self, css, **kwargs):
-		with open(css) as style:
-			res = "<!DOCTYPE html><html><head><title>%s</title><meta charset=\"UTF-8\"><style>%s</style></head><body>"\
-			      % (self.name, style.read())
-			res += '\n'.join(block.emit_html(**kwargs) for block in self.children)
-			if kwargs['ref_style']:
-				res += '<footer>' + ReferenceList().emit_html(**kwargs) + '</footer>'
-			res += "</body></html>"
-			return res
+	def emit_html(self, css, ref_style=False, embed_css=True, **kwargs):
+		if embed_css:
+			with open(css) as style:
+				css_string = '<style>%s</style>' % style.read()
+		else:
+			css_string = '<link rel="stylesheet" href="%s"/>' % css
+
+		res = '<!DOCTYPE html><html><head><title>%s</title><meta charset="UTF-8">%s</head><body>'\
+		      % (self.name, css_string)
+		res += '\n'.join(block.emit_html(ref_style=ref_style, **kwargs) for block in self.children)
+		if ref_style:
+			res += '<footer>' + ReferenceList().emit_html(ref_style=ref_style, **kwargs) + '</footer>'
+		res += '</body></html>'
+		return res
 
 
 class Heading(Node):
@@ -205,29 +211,39 @@ class TableCell(Node):
 
 class Link(Node):
 	def __init__(self, linked_text, url):
+		# TODO: make this take a generic list of children instead of linked_text node
 		super().__init__([linked_text])
-		self.url = url
+		self.url = html.escape(url)
 		self.linked_text = linked_text
 
-	def emit_html(self, **kwargs):
-		return "<a href=\"" + self.url + "\">" + self.linked_text.emit_html() + "</a>"
+	def emit_html(self, link_translation=None, **kwargs):
+		url = self.url
+		if link_translation:
+			url = globalv.ext_translation(url, link_translation)
+
+		return '<a href="' + url + '">' + self.linked_text.emit_html(link_translation=link_translation, **kwargs) + '</a>'
 
 
 class ReferenceLink(Node):
 	def __init__(self, cited_node, ref_key):
+		# TODO:  make this take a generic list of children instead of a singleton cited_node
 		super().__init__([cited_node])
 		self.cited_node = cited_node
 		self.ref_key = ref_key
 
-	def emit_html(self, ref_style=False, **kwargs):
+	def emit_html(self, link_translation=None, ref_style=False, **kwargs):
 		if not globalv.references[self.ref_key]:
 			raise Exception("Missing definition for reference '%s'" % self.ref_key)
 		if ref_style:
 			place = list(globalv.references.keys()).index(self.ref_key) + 1
-			return '%s<cite>[<a href="#%s">%d</a>]</cite>' % (self.cited_node.emit_html(), self.ref_key, place)
+			emitted_html = self.cited_node.emit_html(link_translation=link_translation, ref_style=True)
+			return '%s<cite>[<a href="#%s">%d</a>]</cite>' % (emitted_html, self.ref_key, place)
 		else:
 			_, href = globalv.references[self.ref_key]
-			return '<a href="%s">%s</a>' % (html.escape(href), self.cited_node)
+			href = html.escape(href)
+			if link_translation:
+				href = link_translation(href, link_translation)
+			return '<a href="%s">%s</a>' % (href, self.cited_node)
 
 
 class Content(Node):
