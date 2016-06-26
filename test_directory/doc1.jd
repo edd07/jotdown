@@ -3,6 +3,6 @@ Document One
 
 This is a test document
 
-[This is a link to Document Two](doc2.jd)
+[This is a link to Document Two's subheading](doc2.jd#Subheading)
 
 [This is a link to Document Three](test_subdirectory/doc3.jd)

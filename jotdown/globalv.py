@@ -21,7 +21,16 @@ def content_filetypes(fname):
 
 
 def ext_translation(url, fformat):
+	if '#' in url:
+		url, anchor = url.split('#', 1)
+	else:
+		anchor = None
+
 	name, ext = os.path.splitext(url)
 	if ext == '.jd':
 		url = name + '.' + fformat
-	return url
+
+	if anchor:
+		return url + '#' + anchor
+	else:
+		return url
