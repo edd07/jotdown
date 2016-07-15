@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import shutil
 
-import globalv
+import jotdown.globalv as globalv
 from jotdown.parser import parse
 
 import argparse
