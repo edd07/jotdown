@@ -14,6 +14,9 @@ class Node:
 	def emit_html(self, **kwargs):
 		return ''.join(i.emit_html(**kwargs) for i in self.children)
 
+	def emit_rtf(self, **kwargs):
+		return ''.join(i.emit_rtf(**kwargs) for i in self.children)
+
 	def emit_debug(self, indent=0, **kwargs):
 		return ('\t' * indent) + type(self).__name__ + '\n' + ''.join(i.emit_debug(indent + 1, **kwargs) for i in self.children)
 
@@ -26,6 +29,9 @@ class TextNode(Node):
 	def emit_html(self, **kwargs):
 		return html.escape(self.text, quote=True)
 
+	def emit_rtf(self, **kwargs):
+		return globalv.rtf_escape_unicode(self.text)
+
 	def emit_debug(self, level, **kwargs):
 		summary = repr(self.text[:50])
 		if len(self.text) > len(summary):
@@ -33,6 +39,7 @@ class TextNode(Node):
 		res = ('\t' * level) + type(self).__name__ + ' ' + summary  + '\n'
 		res += ''.join(i.emit_debug(level + 1, **kwargs) for i in self.children)
 		return res
+
 
 # For blocks -------------------------------------------------------------------------
 
@@ -42,26 +49,39 @@ class Document(Node):
 		super().__init__(children)
 		self.name = name
 
-	def emit_html(self, css, ref_style=False, embed_css=True, **kwargs):
+	def emit_html(self, stylesheet, ref_style=False, embed_css=True, **kwargs):
 		if embed_css:
-			with open(css) as style:
-				css_string = '<style>%s</style>' % style.read()
+			with open(stylesheet) as css:
+				css_string = '<style>%s</style>' % css.read()
 		else:
-			css_string = '<link rel="stylesheet" href="%s"/>' % css
+			css_string = '<link rel="stylesheet" href="%s"/>' % stylesheet
 
 		res = '<!DOCTYPE html><html><head><title>%s</title><meta charset="UTF-8">%s</head><body>'\
 		      % (self.name, css_string)
 		res += '\n'.join(block.emit_html(ref_style=ref_style, **kwargs) for block in self.children)
 		if ref_style:
-			res += '<footer>' + ReferenceList().emit_html(ref_style=ref_style, **kwargs) + '</footer>'
+			res += '<footer>' + ReferenceList().emit_html(ref_style=True, **kwargs) + '</footer>'
 		res += '</body></html>'
+		# TODO: Author and creation time meta tags
 		return res
+
+	def emit_rtf(self, stylesheet, **kwargs):
+		with open(stylesheet) as f_style:
+			tables = f_style.read()
+		# TODO: Author in info, and create time
+		return r'''{\rtf1\ansi\deff0\widowctrl %s
+{\info
+{\title %s}
+{\author PLACEHOLDER}
+{\creatim\yr2016\mo7\dy20\hr18\min37}
+}
+''' % (tables, self.name) + ''.join(block.emit_rtf(**kwargs) for block in self.children) + '}'
 
 
 class Heading(Node):
 	def __init__(self, level, children=None):
 		super().__init__(children)
-		self.level = level
+		self.level = min(level, 6)
 
 	def emit_html(self, **kwargs):
 		# Sanitize the text for the id
@@ -78,6 +98,19 @@ class Heading(Node):
 		return '<h%d id="%s">' % (self.level, ident)\
 		       + '<br>'.join(i.emit_html(**kwargs) for i in self.children) + "</h%d>" % self.level
 
+	def emit_rtf(self, **kwargs):
+		# TODO: Distinguish between levels of headings
+		styles = {
+			# level: style index
+			1: 2,
+			2: 3,
+			3: 4,
+			4: 4,
+			5: 4,
+			6: 4
+		}
+		return (r'{\pard\sa180\sb90\keepn\s%d ' % styles[self.level]) + \
+		       r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
 
 class HorizontalRule(Node):
 	def emit_html(self, **kwargs):
@@ -150,20 +183,50 @@ class Paragraph(Node):
 	def emit_html(self, **kwargs):
 		return "<p>" + "<br>".join(i.emit_html(**kwargs) for i in self.children) + "</p>"
 
+	def emit_rtf(self, **kwargs):
+		return r'{\pard\s1 ' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
+
 
 class CodeBlock(Node):
 	def emit_html(self, **kwargs):
 		return "<code class=\"console\">" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</code>"
+
+	def emit_rtf(self, **kwargs):
+		return r'''
+{\pard\sa180\li720\ri720\keep\f2
+\brdrt\brdrs\brdrw10\brsp20
+\brdrl\brdrs\brdrw10\brsp80
+\brdrb\brdrs\brdrw10\brsp20
+\brdrr\brdrs\brdrw10\brsp80
+''' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
 
 
 class MathBlock(Node):
 	def emit_html(self, **kwargs):
 		return "<div class='math'>" + "<br>".join(i.emit_html(**kwargs) for i in self.children) + "</div>"
 
+	def emit_rtf(self, **kwargs):
+		return r'''
+{\pard\sa180\li720\ri720\keep
+\brdrt\brdrs\brdrw10\brsp20
+\brdrl\brdrs\brdrw10\brsp80
+\brdrb\brdrs\brdrw10\brsp20
+\brdrr\brdrs\brdrw10\brsp80
+''' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
+
 
 class Blockquote(Node):
 	def emit_html(self, **kwargs):
 		return "<blockquote>" + "<br>".join(i.emit_html(**kwargs) for i in self.children) + "</blockquote>"
+
+	def emit_rtf(self, **kwargs):
+		return r'''
+{\pard\sa180\li720\ri720\keep\f1
+\brdrt\brdrs\brdrw10\brsp20
+\brdrl\brdrs\brdrw10\brsp80
+\brdrb\brdrs\brdrw10\brsp20
+\brdrr\brdrs\brdrw10\brsp80
+''' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
 
 
 class Math(Node):
@@ -223,6 +286,21 @@ class Link(Node):
 
 		return '<a href="' + url + '">' + self.linked_text.emit_html(link_translation=link_translation, **kwargs) + '</a>'
 
+	def emit_rtf(self, link_translation=None, **kwargs):
+		url = self.url
+		if link_translation:
+			url = globalv.ext_translation(url, link_translation)
+
+		linked_cited = self.linked_text.emit_html(
+			link_translation=link_translation,
+			**kwargs
+		)
+
+		return r'''{\field{\*\fldinst{HYPERLINK "%s"
+}}{\fldrslt{\ul
+%s
+}}}''' % (url, linked_cited)
+
 
 class ReferenceLink(Node):
 	def __init__(self, cited_node, ref_key):
@@ -236,7 +314,11 @@ class ReferenceLink(Node):
 			raise Exception("Missing definition for reference '%s'" % self.ref_key)
 		if ref_style:
 			place = list(globalv.references.keys()).index(self.ref_key) + 1
-			emitted_html = self.cited_node.emit_html(link_translation=link_translation, ref_style=True)
+			emitted_html = self.cited_node.emit_html(
+				link_translation=link_translation,
+				ref_style=True,
+				**kwargs
+			)
 			return '%s<cite>[<a href="#%s">%d</a>]</cite>' % (emitted_html, self.ref_key, place)
 		else:
 			_, href = globalv.references[self.ref_key]
@@ -244,6 +326,33 @@ class ReferenceLink(Node):
 			if link_translation:
 				href = link_translation(href, link_translation)
 			return '<a href="%s">%s</a>' % (href, self.cited_node)
+
+	def emit_rtf(self, link_translation=None, ref_style=False, **kwargs):
+		if not globalv.references[self.ref_key]:
+			raise Exception("Missing definition for reference '%s'" % self.ref_key)
+
+		cited_emmited = self.cited_node.emit_rtf(
+			link_translation=link_translation,
+			ref_style=ref_style,
+			**kwargs
+		)
+		if ref_style:
+			ref_emmited, _ = globalv.references[self.ref_key].emit_rtf(
+				link_translation,
+				ref_style,
+				**kwargs
+			)
+			return r'%s{\super\chftn}{\footnote\pard\plain\chftn %s}' % (cited_emmited, ref_emmited)
+		else:
+			_, href = globalv.references[self.ref_key]
+			href = html.escape(href)
+			if link_translation:
+				href = link_translation(href, link_translation)
+			return r'''{\field{\*\fldinst{HYPERLINK
+"%s"
+}}{\fldrslt{\ul
+%s
+}}}''' % (href, cited_emmited)
 
 
 class Content(Node):
@@ -254,6 +363,7 @@ class Content(Node):
 		self.title = title
 
 	def emit_html(self, **kwargs):
+		# TODO: Allow embedding of data to eliminate the need to link to it (maybe even downloading stuff from the web
 		dtype = globalv.content_filetypes(self.src)
 		if dtype == 'image':
 			elem = '<img src="%s" title="%s" alt="%s">' % (self.src, self.title, self.alt)
@@ -272,12 +382,23 @@ class Content(Node):
 
 class ImplicitLink(TextNode):
 	def emit_html(self, **kwargs):
-		return "<a href=\"" + self.text + "\">" + self.text + "</a>"
+		return '<a href="' + self.text + '">' + self.text + '</a>'
 
+	def emit_rtf(self, **kwargs):
+		return r'''{\field{\*\fldinst{HYPERLINK "%s"
+}}{\fldrslt{\ul
+%s
+}}}''' % (self.text, self.text)
 
 class ImplicitEmail(TextNode):
 	def emit_html(self, **kwargs):
-		return "<a href=\"mailto:" + self.text + "\">" + self.text + "</a>"
+		return '<a href="mailto:' + self.text + '">' + self.text + '</a>'
+
+	def emit_rtf(self, **kwargs):
+		return r'''{\field{\*\fldinst{HYPERLINK "mailto:%s"
+}}{\fldrslt{\ul
+%s
+}}}''' % (self.text, self.text)
 
 
 # For text ----------------------------------------------------------------------
@@ -295,20 +416,31 @@ class Emph(Node):
 	def emit_html(self, **kwargs):
 		return "<em>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</em>"
 
+	def emit_rtf(self, **kwargs):
+		return r'{\i ' + ''.join(i.emit_rtf(**kwargs) for i in self.children) + '}'
+
 
 class Strong(Node):
 	def emit_html(self, **kwargs):
 		return "<strong>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</strong>"
+
+	def emit_rtf(self, **kwargs):
+		return r'{\b ' + ''.join(i.emit_rtf(**kwargs) for i in self.children) + '}'
 
 
 class StrongEmph(Node):
 	def emit_html(self, **kwargs):
 		return "<strong><em>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</em></strong>"
 
+	def emit_rtf(self, **kwargs):
+		return r'{\b \i ' + ''.join(i.emit_rtf(**kwargs) for i in self.children) + '}'
 
 class Strikethrough(Node):
 	def emit_html(self, **kwargs):
 		return "<del>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</del>"
+
+	def emit_rtf(self, **kwargs):
+		return r'{\strike ' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
 
 
 # MATH -------------------

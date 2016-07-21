@@ -28,6 +28,7 @@ body {
 
 h1 {
 	font-weight: bold;
+	font-size: xx-large;
 	color: #b58900;
 }
 
@@ -36,6 +37,7 @@ h2 *, h2 {
 	font-weight: normal;
 	font-family: helvetica, arial, sans-serif;
 	font-style: normal;
+	font-size: x-large;
 }
 
 @media screen {

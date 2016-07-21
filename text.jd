@@ -54,6 +54,7 @@ The tags can be used like this: **nested *italics* in bold**
 Or combined like this: ***strong emphasis*** and ___again___
 This is an equation inline «a^2 + b^2 = c^2» with more text after it
 This is some ~~strikethrough~~ text, like on Github, and a lonely ~ tilde rendered normally
+This is {surrounded by braces}, this is preceded by a \backslash
 
 >This is a
 >hard-wrapped blockquote.
