@@ -170,7 +170,7 @@ ol {
 	font-size: 10pt;
 }
 
-ol li {
+ol>li {
 	padding-left: 5.08mm;
 	list-style: none;
 	counter-increment: olcount;
@@ -199,7 +199,6 @@ ol[type='i']>li::before {
 }
 
 ul {
-	counter-reset: ulcount;
 	list-style: round;
 }
 
