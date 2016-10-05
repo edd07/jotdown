@@ -17,6 +17,9 @@ class Node:
 	def emit_rtf(self, **kwargs):
 		return ''.join(i.emit_rtf(**kwargs) for i in self.children)
 
+	def emit_latex(self, **kwargs):
+		return ''.join(i.emit_latex(**kwargs) for i in self.children)
+
 	def emit_debug(self, indent=0, **kwargs):
 		return ('\t' * indent) + type(self).__name__ + '\n' + ''.join(i.emit_debug(indent + 1, **kwargs) for i in self.children)
 
@@ -31,6 +34,9 @@ class TextNode(Node):
 
 	def emit_rtf(self, **kwargs):
 		return globalv.rtf_escape_unicode(self.text)
+
+	def emit_latex(self, **kwargs):
+		return self.text
 
 	def emit_debug(self, level, **kwargs):
 		summary = repr(self.text[:50])
@@ -76,6 +82,13 @@ class Document(Node):
 {\creatim\yr2016\mo7\dy20\hr18\min37}
 }
 ''' % (tables, self.name) + ''.join(block.emit_rtf(**kwargs) for block in self.children) + '}'
+
+	def emit_latex(self, stylesheet, **kwargs):
+		return '''\documentclass{article}
+\begin{document}
+%s
+\end{document}
+''' % ''.join(block.emit_latex(**kwargs) for block in self.children)
 
 
 class Heading(Node):
