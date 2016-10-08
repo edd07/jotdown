@@ -6,7 +6,7 @@ http://ethanschoonover.com/solarized
 
 @media screen {
 	html {
-		background-color: #eee8d5;
+		background-color: #eee8d5; /* base2 */
 	}
 }
 
@@ -14,26 +14,26 @@ body {
 	font-family: helvetica, arial, sans-serif;
 	font-size: 12pt;
 	padding: 16px;
-	color: #657b83;
-	border-top: 5px solid #b58900;
+	color: #657b83; /* base00 */
+	border-top: 5px solid #b58900; /* yellow */
 }
 
 @media screen {
 	body {
 		margin: 0 auto 0 auto;
 		max-width: 900px;
-		background-color: #fdf6e3;
+		background-color: #fdf6e3; /* base3 */
 	}
 }
 
 h1 {
 	font-weight: bold;
 	font-size: xx-large;
-	color: #b58900;
+	color: #b58900; /* yellow */
 }
 
 h2 *, h2 {
-	color: #cb4b16 !important;
+	color: #cb4b16 !important; /* orange */
 	font-weight: normal;
 	font-family: helvetica, arial, sans-serif;
 	font-style: normal;
@@ -42,8 +42,8 @@ h2 *, h2 {
 
 @media screen {
 	hr {
-		color: #eee8d5;
-		background-color: #eee8d5;
+		color: #eee8d5; /* base2 */
+		background-color: #eee8d5; /* base2 */
 		height: 16px;
 		width: 932px;
 		margin: 0 -16px 0 -16px;
@@ -72,12 +72,12 @@ div.math {
 
 @media screen {
 	div.math {
-		background-color: #eee8d5;
+		background-color: #eee8d5; /* base2 */
 	}
 }
 
 .math, code {
-	color: #586e75;
+	color: #586e75; /* base01 */
 }
 
 .math {
@@ -93,16 +93,16 @@ div.math {
 @media screen {
 	.console {
 		margin: 0 -16px 0 -16px;
-		background-color: #002b36;
-		color: #839496;
+		background-color: #002b36; /* base03 */
+		color: #839496; /* base0 */
 	}
 }
 
 @media print {
 	.console {
 		margin: 16px 40px 16px 40px;
-		color: #002b36;
-		border: #002b36 solid 1px;
+		color: #002b36; /* base03 */
+		border: #002b36 solid 1px; /* base3 */
 	}
 }
 
@@ -123,11 +123,11 @@ ul {
 }
 
 li {
-	color: #d33682;
+	color: #d33682; /* magenta */
 }
 
 li span {
-	color: #657b83;
+	color: #657b83; /* base00 */
 }
 
 .references li {
@@ -135,14 +135,14 @@ li span {
 }
 
 blockquote {
-	color: #586e75;
+	color: #586e75; /* base01 */
 	padding: 16px;
-	border: #2aa198 solid 1px;
+	border: #2aa198 solid 1px; /* cyan */
 }
 
 @media screen {
 	blockquote {
-		background-color: #eee8d5;
+		background-color: #eee8d5; /* base2 */
 	}
 }
 
@@ -154,6 +154,7 @@ figure {
 img, audio, video, object {
 	display: block;
 	margin: auto;
+	width: 100%;
 }
 
 table {
@@ -162,7 +163,7 @@ table {
 
 table, td, th {
 	border-collapse: collapse;
-	border: 1px solid #6c71c4;
+	border: 1px solid #6c71c4; /* violet */
 }
 
 td, th {
@@ -176,13 +177,13 @@ caption {
 
 @media screen {
 	th, th * {
-		background-color: #6c71c4;
-		color: #fdf6e3 !important;
+		background-color: #6c71c4; /* violet */
+		color: #fdf6e3 !important; /* base3 */
 	}
 }
 
 @media print {
 	th, th * {
-		color: #6c71c4 !important;
+		color: #6c71c4 !important; /* violet */
 	}
 }
