@@ -84,7 +84,7 @@ def parse(file):
 					caption = parse_text(block[-1])
 					md_table = block[2:-2]
 
-			table = Table(caption, [TableRow(header)])
+			table = Table(caption, alignment, [TableRow(header)])
 
 			for line in md_table:
 				cells = []

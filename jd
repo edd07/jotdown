@@ -32,6 +32,7 @@ args = argparser.parse_args()
 style_ext = {
 	'html': '.css',
 	'rtf': '.rtf',
+	'latex': '.tex',
 	'debug': '',
 }
 

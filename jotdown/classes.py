@@ -84,7 +84,9 @@ class Document(Node):
 ''' % (tables, self.name) + ''.join(block.emit_rtf(**kwargs) for block in self.children) + '}'
 
 	def emit_latex(self, stylesheet, **kwargs):
-		return '''\documentclass{article}
+		# TODO: Customize document type
+		return r'''\documentclass{article}
+\usepackage[utf8]{inputenc}
 \begin{document}
 %s
 \end{document}
@@ -125,6 +127,15 @@ class Heading(Node):
 		return (r'{\pard\sa180\sb90\keepn\s%d ' % styles[self.level]) + \
 		       r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
 
+	def emit_latex(self, **kwargs):
+		levels = {
+			1: r'\section{',
+			2: r'\subsection{',
+			3: r'\subsubsection{',
+		}
+		return levels.get(self.level, r'\subsubsection{') + ' '.join(i.emit_latex(**kwargs) for i in self.children) + '}\n'
+
+
 class HorizontalRule(Node):
 	def emit_html(self, **kwargs):
 		return "<hr/>"
@@ -142,6 +153,13 @@ class UList(List):
 		res += "</ul>"
 		return res
 
+	def emit_latex(self, **kwargs):
+		res = r'\begin{itemize}' + '\n'
+		for item in self.children:
+			res += item.emit_latex(**kwargs)
+		res += '\n' + r'\end{itemize}'
+		return res
+
 
 class OList(List):
 	def __init__(self, children=None, list_type='1', start=1):
@@ -154,6 +172,13 @@ class OList(List):
 		for item in self.children:
 			res += item.emit_html(**kwargs)
 		res += "</ol>"
+		return res
+
+	def emit_latex(self, **kwargs):
+		res = r'\begin{enumerate}' + '\n'
+		for item in self.children:
+			res += item.emit_latex(**kwargs)
+		res += '\n' + r'\end{enumerate}'
 		return res
 
 
@@ -180,6 +205,9 @@ class ListItem(Node):
 			res.append(self.children[-1].emit_html(**kwargs) + "</span>")
 
 		return ''.join(res)
+
+	def emit_latex(self, **kwargs):
+		return r'\item ' + ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 
 class ReferenceItem(Node):
@@ -227,6 +255,10 @@ class MathBlock(Node):
 \brdrr\brdrs\brdrw10\brsp80
 ''' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
 
+	def emit_latex(self, **kwargs):
+		return r'\begin{equation}' + '\n' + '\n'.join(i.emit_latex(**kwargs) for i in self.children) +\
+		       '\n' + r'\end{equation}'
+
 
 class Blockquote(Node):
 	def emit_html(self, **kwargs):
@@ -246,11 +278,15 @@ class Math(Node):
 	def emit_html(self, **kwargs):
 		return ''.join(i.emit_html(**kwargs) for i in self.children)
 
+	def emit_latex(self, **kwargs):
+		return ''.join(i.emit_latex(**kwargs) for i in self.children)
+
 
 class Table(Node):
-	def __init__(self, caption, children=None):
+	def __init__(self, caption, alignment, children=None):
 		super().__init__(children)
 		self.caption = caption
+		self.alignment = alignment
 
 	def emit_html(self, **kwargs):
 		caption_html = ''
@@ -258,15 +294,35 @@ class Table(Node):
 			caption_html = '<caption>' + ''.join(i.emit_html(**kwargs) for i in self.caption) + '</caption>'
 		return '<table>' + caption_html + ''.join(i.emit_html(**kwargs) for i in self.children) + '</table>'
 
+	def emit_latex(self, **kwargs):
+		caption_latex = ''
+		if self.caption:
+			caption_latex = r'\caption{' + ''.join(i.emit_latex(**kwargs) for i in self.caption) + '}'
+		alignment_map = {
+			0: 'l',
+			1: 'c',
+			2: 'r',
+		}
+		alignment_string = '{' + '|'.join(alignment_map[i] for i in self.alignment) + '}'
+		return r'\begin{tabular}' + alignment_string + '\n' + caption_latex + '\n' +\
+		       self.children[0].emit_latex(**kwargs) + r'\\ \hline ' +\
+		       ' \\\\\n'.join(i.emit_latex(**kwargs) for i in self.children[1:]) + r'\end{tabular}'
+
 
 class TableRow(Node):
 	def emit_html(self, **kwargs):
 		return "<tr>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</tr>"
 
+	def emit_latex(self, **kwargs):
+		return ' & '.join(i.emit_latex(**kwargs) for i in self.children)
+
 
 class TableHeader(Node):
 	def emit_html(self, **kwargs):
 		return "<th>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</th>"
+
+	def emit_latex(self, **kwargs):
+		return ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 
 class TableCell(Node):
@@ -283,6 +339,9 @@ class TableCell(Node):
 	def emit_html(self, **kwargs):
 		return "<td style=\"text-align: %s;\">" % self.align_map[self.align] +\
 		       ''.join(i.emit_html(**kwargs) for i in self.children) + "</td>"
+
+	def emit_latex(self, **kwargs):
+		return ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 
 class Link(Node):
@@ -462,6 +521,9 @@ class MathInline(Node):
 	def emit_html(self, **kwargs):
 		return '<span class="math">' + ''.join(i.emit_html(**kwargs) for i in self.children) + '</span>'
 
+	def emit_latex(self, **kwargs):
+		return '$' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '$'
+
 
 class Parenthesis(Node):
 	def emit_html(self, **kwargs):
@@ -469,7 +531,7 @@ class Parenthesis(Node):
 
 	def emit_mathml(self, **kwargs):
 		return "<mfenced open=\"(\" close=\")\"><mrow>" + ''.join(i.emit_mathml(**kwargs) for i in self.children)\
-		       +"</mrow></mfenced>"
+		       + "</mrow></mfenced>"
 
 
 class Braces(Node):
