@@ -200,6 +200,7 @@ ol[type='i']>li::before {
 
 ul {
 	list-style: round;
+	font-size: 10pt;
 }
 
 a {
