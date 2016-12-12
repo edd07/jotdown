@@ -4,6 +4,7 @@ import os
 import re
 
 import jotdown.globalv as globalv
+from jotdown.regex import latex_math_subst
 
 
 # Abstract ---------------------------------
@@ -36,7 +37,7 @@ class TextNode(Node):
 		return globalv.rtf_escape_unicode(self.text)
 
 	def emit_latex(self, **kwargs):
-		return self.text
+		return self.text.replace('&', r'\&')
 
 	def emit_debug(self, level, **kwargs):
 		summary = repr(self.text[:50])
@@ -83,14 +84,19 @@ class Document(Node):
 }
 ''' % (tables, self.name) + ''.join(block.emit_rtf(**kwargs) for block in self.children) + '}'
 
-	def emit_latex(self, stylesheet, **kwargs):
+	def emit_latex(self, stylesheet, ref_style=False, **kwargs):
 		# TODO: Customize document type
-		return r'''\documentclass{article}
+		res = r'''\documentclass{article}
 \usepackage[utf8]{inputenc}
-\begin{document}
-%s
-\end{document}
-''' % ''.join(block.emit_latex(**kwargs) for block in self.children)
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\begin{document}'''
+		res += ''.join(block.emit_latex(ref_style=ref_style, **kwargs) for block in self.children)
+		if ref_style:
+			res += ReferenceList().emit_latex(ref_style=True, **kwargs)
+		res += ' \end{document}'
+		return res
 
 
 class Heading(Node):
@@ -194,6 +200,12 @@ class ReferenceList(OList):
 		res += '</ol>'
 		return res
 
+	def emit_latex(self, **kwargs):
+		res = r' \begin{thebibliography}{%s}' % len(globalv.references) + '\n'
+		res += '\n'.join(i.emit_latex(**kwargs) for i in self.children)
+		res += r' \end{thebibliography}'
+		return res
+
 
 class ListItem(Node):
 	def emit_html(self, **kwargs):
@@ -219,6 +231,9 @@ class ReferenceItem(Node):
 	def emit_html(self, **kwargs):
 		return '<li><a id="%s"><span>%s</span></a></li>' % (self.ref_key, self.content.emit_html(**kwargs))
 
+	def emit_latex(self, **kwargs):
+		return r'\bibitem{%s} %s ' % (self.ref_key, self.content.emit_latex(**kwargs))
+
 
 class Paragraph(Node):
 	def emit_html(self, **kwargs):
@@ -226,6 +241,9 @@ class Paragraph(Node):
 
 	def emit_rtf(self, **kwargs):
 		return r'{\pard\s1 ' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
+
+	def emit_latex(self, **kwargs):
+		return r'\par ' + r'\\ '.join(i.emit_latex(**kwargs) for i in self.children)
 
 
 class CodeBlock(Node):
@@ -256,8 +274,7 @@ class MathBlock(Node):
 ''' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
 
 	def emit_latex(self, **kwargs):
-		return r'\begin{equation}' + '\n' + '\n'.join(i.emit_latex(**kwargs) for i in self.children) +\
-		       '\n' + r'\end{equation}'
+		return r'\begin{gather*}' + '\n' + '\n'.join(i.emit_latex(**kwargs) for i in self.children) + '\n' + r'\end{gather*}'
 
 
 class Blockquote(Node):
@@ -279,7 +296,10 @@ class Math(Node):
 		return ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return ''.join(i.emit_latex(**kwargs) for i in self.children)
+		text = ''.join(i.emit_latex(**kwargs) for i in self.children)
+		for regex, subst in latex_math_subst:
+			text = text.replace(regex, subst)
+		return text
 
 
 class Table(Node):
@@ -373,6 +393,15 @@ class Link(Node):
 %s
 }}}''' % (url, linked_cited)
 
+	def emit_latex(self, link_translation=None, **kwargs):
+		url = self.url
+		if link_translation:
+			url = globalv.ext_translation(url, link_translation)
+		return r' \href{%s}{%s} ' % (
+			url,
+			self.linked_text.emit_latex(link_translation=link_translation, **kwargs)
+		)
+
 
 class ReferenceLink(Node):
 	def __init__(self, cited_node, ref_key):
@@ -426,6 +455,23 @@ class ReferenceLink(Node):
 %s
 }}}''' % (href, cited_emmited)
 
+	def emit_latex(self, link_translation=None, ref_style=False, **kwargs):
+		if not globalv.references[self.ref_key]:
+			raise Exception("Missing definition for reference '%s'" % self.ref_key)
+		if ref_style:
+			ref_emmited = self.cited_node.emit_latex(
+				link_translation=link_translation,
+				ref_style=True,
+				**kwargs
+			)
+			return r'%s \cite{%s}' % (ref_emmited, self.ref_key)
+		else:
+			_, href = globalv.references[self.ref_key]
+			href = html.escape(href)
+			if link_translation:
+				href = link_translation(href, link_translation)
+			return r' \href{%s}{%s}' % (href, self.cited_node)
+
 
 class Content(Node):
 	def __init__(self, alt, src, title, children=None):
@@ -451,6 +497,19 @@ class Content(Node):
 		# TODO: make figures a command line option
 		return '<figure>%s<figcaption>%s</figcaption></figure>' % (elem, self.title)
 
+	def emit_latex(self, **kwargs):
+		dtype = globalv.content_filetypes(self.src)
+		if dtype == 'image':
+			elem = r'\includegraphics[width=\textwidth]{%s}' % self.src
+
+		return r'''
+\begin{figure}
+\centering
+\caption{%s}
+%s
+\end{figure}
+''' % (self.title, elem)
+
 
 class ImplicitLink(TextNode):
 	def emit_html(self, **kwargs):
@@ -461,6 +520,9 @@ class ImplicitLink(TextNode):
 }}{\fldrslt{\ul
 %s
 }}}''' % (self.text, self.text)
+
+	def emit_latex(self, **kwargs):
+		return r' \url{%s}' % self.text
 
 class ImplicitEmail(TextNode):
 	def emit_html(self, **kwargs):
@@ -491,6 +553,9 @@ class Emph(Node):
 	def emit_rtf(self, **kwargs):
 		return r'{\i ' + ''.join(i.emit_rtf(**kwargs) for i in self.children) + '}'
 
+	def emit_latex(self, **kwargs):
+		return r'\textit{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}'
+
 
 class Strong(Node):
 	def emit_html(self, **kwargs):
@@ -499,6 +564,9 @@ class Strong(Node):
 	def emit_rtf(self, **kwargs):
 		return r'{\b ' + ''.join(i.emit_rtf(**kwargs) for i in self.children) + '}'
 
+	def emit_latex(self, **kwargs):
+		return r'\textbf{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}'
+
 
 class StrongEmph(Node):
 	def emit_html(self, **kwargs):
@@ -506,6 +574,10 @@ class StrongEmph(Node):
 
 	def emit_rtf(self, **kwargs):
 		return r'{\b \i ' + ''.join(i.emit_rtf(**kwargs) for i in self.children) + '}'
+
+	def emit_latex(self, **kwargs):
+		return r'\textit{\textbf' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}}'
+
 
 class Strikethrough(Node):
 	def emit_html(self, **kwargs):
@@ -522,7 +594,10 @@ class MathInline(Node):
 		return '<span class="math">' + ''.join(i.emit_html(**kwargs) for i in self.children) + '</span>'
 
 	def emit_latex(self, **kwargs):
-		return '$' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '$'
+		text = ''.join(i.emit_latex(**kwargs) for i in self.children)
+		for regex, subst in latex_math_subst:
+			text = text.replace(regex, subst)
+		return '$' + text + '$'
 
 
 class Parenthesis(Node):
@@ -533,10 +608,16 @@ class Parenthesis(Node):
 		return "<mfenced open=\"(\" close=\")\"><mrow>" + ''.join(i.emit_mathml(**kwargs) for i in self.children)\
 		       + "</mrow></mfenced>"
 
+	def emit_latex(self, **kwargs):
+		return '(' + ''.join(i.emit_latex(**kwargs) for i in self.children) + ')'
+
 
 class Braces(Node):
 	def emit_html(self, **kwargs):
 		return "{ " + ''.join(i.emit_html(**kwargs) for i in self.children) + " }"
+
+	def emit_latex(self, **kwargs):
+		return r'\{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + r'\}'
 
 
 class Brackets(Node):
@@ -561,6 +642,13 @@ class Sum(Node):
 	""" % (self.children[0].emit_mathml(**kwargs),
 		   self.children[1].emit_mathml(**kwargs)) + ''.join(i.emit_html(**kwargs) for i in self.children[2:])
 
+	def emit_latex(self, **kwargs):
+		return r'\displaystyle\sum^{%s}_{%s} %s' % (
+			self.children[1].emit_latex(**kwargs),
+			self.children[0].emit_latex(**kwargs),
+			''.join(i.emit_latex(**kwargs) for i in self.children[2:])
+		)
+
 
 class Prod(Node):
 	def emit_html(self, **kwargs):
@@ -575,6 +663,13 @@ class Prod(Node):
 	</mrow></mstyle></math>
 	""" % (self.children[0].emit_mathml(**kwargs),
 		   self.children[1].emit_mathml(**kwargs)) + ''.join(i.emit_html(**kwargs) for i in self.children[2:])
+
+	def emit_latex(self, **kwargs):
+		return r'\displaystyle\prod^{%s}_{%s} %s' % (
+			self.children[1].emit_latex(**kwargs),
+			self.children[0].emit_latex(**kwargs),
+			''.join(i.emit_latex(**kwargs) for i in self.children[2:])
+		)
 
 
 class Int(Node):
@@ -591,6 +686,13 @@ class Int(Node):
 	""" % (self.children[0].emit_mathml(**kwargs),
 		   self.children[1].emit_mathml(**kwargs)) + ''.join(i.emit_html(**kwargs) for i in self.children[2:])
 
+	def emit_latex(self, **kwargs):
+		return r'\displaystyle\sum^{%s}_{%s} %s' % (
+			self.children[1].emit_latex(**kwargs),
+			self.children[0].emit_latex(**kwargs),
+			''.join(i.emit_latex(**kwargs) for i in self.children[2:])
+		)
+
 
 class SuperscriptBrackets(Node):
 	def emit_html(self, **kwargs):
@@ -598,6 +700,9 @@ class SuperscriptBrackets(Node):
 
 	def emit_mathml(self, **kwargs):
 		return "<msup><msrow></msrow><msrow>" + ''.join(i.emit_mathml(**kwargs) for i in self.children) + "</msrow></mssup>"
+
+	def emit_latex(self, **kwargs):
+		return '^{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}'
 
 
 class SubscriptBrackets(Node):
@@ -607,6 +712,9 @@ class SubscriptBrackets(Node):
 	def emit_mathml(self, **kwargs):
 		return "<msub><msrow></msrow><msrow>" + ''.join(i.emit_mathml(**kwargs) for i in self.children) + "</msrow></mssub>"
 
+	def emit_latex(self, **kwargs):
+		return '_{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}'
+
 
 class Subscript(TextNode):
 	def emit_html(self, **kwargs):
@@ -615,6 +723,9 @@ class Subscript(TextNode):
 	def emit_mathml(self, **kwargs):
 		return "<msub><mrow></mrow><mrow>" + html.escape(self.text, quote=True) + "</mrow></mssub>"
 
+	def emit_latex(self, **kwargs):
+		return '_{' + self.text + '}'
+
 
 class Superscript(TextNode):
 	def emit_html(self, **kwargs):
@@ -622,6 +733,9 @@ class Superscript(TextNode):
 
 	def emit_mathml(self, **kwargs):
 		return "<msup><mrow></mrow><mrow>" + html.escape(self.text, quote=True) + "</mrow></mssup>"
+
+	def emit_latex(self, **kwargs):
+		return '^{' + self.text + '}'
 
 
 class Identifier(TextNode):
@@ -644,6 +758,9 @@ class Comment(TextNode):
 	def emit_html(self, **kwargs):
 		return ' %s ' % html.escape(self.text, quote=True)
 
+	def emit_latex(self, **kwargs):
+		return r' \text{' + self.text + '} '
+
 
 class Number(TextNode):
 	def emit_mathml(self, **kwargs):
@@ -653,3 +770,6 @@ class Number(TextNode):
 class Newline(TextNode):
 	def emit_html(self, **kwargs):
 		return "<br>"
+
+	def emit_latex(self, **kwargs):
+		return r'\\'
