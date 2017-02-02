@@ -27,6 +27,7 @@ argparser.add_argument('-o', '--output', default='out')
 argparser.add_argument('-f', '--format', default='html')
 argparser.add_argument('-s', '--style', default='solarized')
 argparser.add_argument('-c', '--citations', action='store_true')
+argparser.add_argument('-a', '--author', default=None)
 args = argparser.parse_args()
 
 style_ext = {
@@ -80,6 +81,7 @@ elif os.path.isdir(args.input):
 					ref_style=args.citations,
 					stylesheet=os.path.relpath(stylesheet, out_dirpath), embed_css=False,
 					link_translation=args.format,
+					author=args.author,
 				)
 			else:
 				shutil.copy(os.path.join(in_dirpath, in_fname), os.path.join(out_dirpath, in_fname))
@@ -119,6 +121,7 @@ elif os.path.isdir(args.input):
 					stylesheet=os.path.relpath(stylesheet, out_dirpath),
 					embed_css=False,
 					link_translation=args.format,
+					author=args.author,
 				), 'utf-8'))
 else:
 	raise Exception(args.input + ' does not exist')

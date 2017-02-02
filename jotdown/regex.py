@@ -66,11 +66,11 @@ math_subst = [
 (word_re % 'omega', 'ω'),
 
 # Number sets
-	(word_re % 'NATURALS', 'ℕ'),
-	(word_re % 'INTEGERS', 'ℤ'),
-	(word_re % 'RATIONALS', 'ℚ'),
-	(word_re % 'REALS', 'ℝ'),
-	(word_re % 'COMPLEX', 'ℂ'),
+(word_re % 'NATURALS', 'ℕ'),
+(word_re % 'INTEGERS', 'ℤ'),
+(word_re % 'RATIONALS', 'ℚ'),
+(word_re % 'REALS', 'ℝ'),
+(word_re % 'COMPLEX', 'ℂ'),
 
 # Infinities
 (word_re % 'INF', '∞'),
@@ -206,6 +206,7 @@ latex_math_subst = [
 ('⊆', r'\subseteq '),
 ('⊂', r'\subset '),
 ('∅', r'\varnothing '),
+('∁', r'\mathsf{c}'),  # TODO: use \stcomp{A} for semantic correctness
 ('∪', r'\cup '),
 ('∩', r'\cap '),
 ('Ø', r'\emptyset '),
@@ -213,7 +214,7 @@ latex_math_subst = [
 # # More operators
 # (r"\.\.\.", '…'),
 # (r"\+-", '±'),
-# (r"-", '−'),
+('−', '-'),
 
 # Quantification
 ('∀', r'\forall '),

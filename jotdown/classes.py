@@ -2,6 +2,8 @@
 import html
 import os
 import re
+from getpass import getuser
+from socket import gethostname
 
 import jotdown.globalv as globalv
 from jotdown.regex import latex_math_subst
@@ -37,14 +39,33 @@ class TextNode(Node):
 		return globalv.rtf_escape_unicode(self.text)
 
 	def emit_latex(self, **kwargs):
-		return self.text.replace('&', r'\&')
+		special_chars = (
+			('\\', r'\textbackslash '),
+		    ('&', r'\& '),
+		    ('%', r'\%'),
+		    ('$', r'\$'),
+		    ('#', r'\#'),
+		    ('_', r'\_'),
+		    ('{', r'\{'),
+		    ('}', r'\}'),
+		    ('~', r'\textasciitilde '),
+		    ('^', r'\textasciicircum '),
+			('—', r'---'),
+			('–', r'--'),
+			('>', r'\textgreater '),
+			('<', r'\textless '),
+		)
+		text = self.text
+		for old, new in special_chars:
+			text = text.replace(old, new)
+		return text
 
-	def emit_debug(self, level, **kwargs):
+	def emit_debug(self, indent=0, **kwargs):
 		summary = repr(self.text[:50])
 		if len(self.text) > len(summary):
 			summary += '...'
-		res = ('\t' * level) + type(self).__name__ + ' ' + summary  + '\n'
-		res += ''.join(i.emit_debug(level + 1, **kwargs) for i in self.children)
+		res = ('\t' * indent) + type(self).__name__ + ' ' + summary + '\n'
+		res += ''.join(i.emit_debug(indent + 1, **kwargs) for i in self.children)
 		return res
 
 
@@ -52,9 +73,11 @@ class TextNode(Node):
 
 
 class Document(Node):
-	def __init__(self, children=None, name="Jotdown Document"):
+	def __init__(self, children=None, name="Jotdown Document", author=None):
 		super().__init__(children)
 		self.name = name
+		self.author = getuser() if not author else author
+		self.hostname = gethostname()
 
 	def emit_html(self, stylesheet, ref_style=False, embed_css=True, **kwargs):
 		if embed_css:
@@ -85,18 +108,24 @@ class Document(Node):
 ''' % (tables, self.name) + ''.join(block.emit_rtf(**kwargs) for block in self.children) + '}'
 
 	def emit_latex(self, stylesheet, ref_style=False, **kwargs):
-		# TODO: Customize document type
-		res = r'''\documentclass{article}
+		packages = r'''
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{hyperref}
 \usepackage{graphicx}
-\begin{document}'''
-		res += ''.join(block.emit_latex(ref_style=ref_style, **kwargs) for block in self.children)
-		if ref_style:
-			res += ReferenceList().emit_latex(ref_style=True, **kwargs)
-		res += ' \end{document}'
-		return res
+\usepackage{listings}
+\usepackage{csquotes}
+'''
+		field_dict = {
+			'packages': packages,
+			'title': self.name,
+			'body': ''.join(block.emit_latex(ref_style=ref_style, **kwargs) for block in self.children),
+			'references': ReferenceList().emit_latex(ref_style=True, **kwargs) if ref_style else '',
+			'author': self.author,
+			'institution': self.hostname,
+		}
+		with open(stylesheet) as f_style:
+			return f_style.read() % field_dict
 
 
 class Heading(Node):
@@ -139,19 +168,18 @@ class Heading(Node):
 			2: r'\subsection{',
 			3: r'\subsubsection{',
 		}
-		return levels.get(self.level, r'\subsubsection{') + ' '.join(i.emit_latex(**kwargs) for i in self.children) + '}\n'
+		return levels.get(self.level, r'\subsubsection{') + r'\\'.join(i.emit_latex(**kwargs) for i in self.children) + '}\n'
 
 
 class HorizontalRule(Node):
 	def emit_html(self, **kwargs):
 		return "<hr/>"
 
+	def emit_latex(self, **kwargs):
+		return '\n' + r'\rule{\textwidth}{1pt}' + '\n'
 
-class List(Node):
-	pass
 
-
-class UList(List):
+class UList(Node):
 	def emit_html(self, **kwargs):
 		res = "<ul>"
 		for item in self.children:
@@ -163,11 +191,11 @@ class UList(List):
 		res = r'\begin{itemize}' + '\n'
 		for item in self.children:
 			res += item.emit_latex(**kwargs)
-		res += '\n' + r'\end{itemize}'
+		res += '\n' + r'\end{itemize}' + '\n'
 		return res
 
 
-class OList(List):
+class OList(Node):
 	def __init__(self, children=None, list_type='1', start=1):
 		super().__init__(children)
 		self.start = start
@@ -184,14 +212,14 @@ class OList(List):
 		res = r'\begin{enumerate}' + '\n'
 		for item in self.children:
 			res += item.emit_latex(**kwargs)
-		res += '\n' + r'\end{enumerate}'
+		res += '\n' + r'\end{enumerate}' + '\n'
 		return res
 
 
 class ReferenceList(OList):
 	def __init__(self):
 		items = [ReferenceItem(ref_key, content[0]) for ref_key, content in globalv.references.items()]
-		super().__init__(items, 1)
+		super().__init__(items, '1')
 
 	def emit_html(self, **kwargs):
 		res = '<ol class="references" start="%s">' % self.start
@@ -219,7 +247,7 @@ class ListItem(Node):
 		return ''.join(res)
 
 	def emit_latex(self, **kwargs):
-		return r'\item ' + ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return r'\item ' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '\n'
 
 
 class ReferenceItem(Node):
@@ -259,6 +287,11 @@ class CodeBlock(Node):
 \brdrr\brdrs\brdrw10\brsp80
 ''' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
 
+	def emit_latex(self, **kwargs):
+		return r'\begin{lstlisting}' + '\n' + \
+		       ''.join(i.emit_latex(**kwargs) for i in self.children) + \
+		       r'\end{lstlisting}' + '\n'
+
 
 class MathBlock(Node):
 	def emit_html(self, **kwargs):
@@ -289,6 +322,10 @@ class Blockquote(Node):
 \brdrb\brdrs\brdrw10\brsp20
 \brdrr\brdrs\brdrw10\brsp80
 ''' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
+
+	def emit_latex(self, **kwargs):
+		return r'\begin{displayquote}' + '\n' +\
+	r'\\'.join(i.emit_latex(**kwargs) for i in self.children) + r'\end{displayquote}' + '\n'
 
 
 class Math(Node):
@@ -324,9 +361,12 @@ class Table(Node):
 			2: 'r',
 		}
 		alignment_string = '{' + '|'.join(alignment_map[i] for i in self.alignment) + '}'
-		return r'\begin{tabular}' + alignment_string + '\n' + caption_latex + '\n' +\
-		       self.children[0].emit_latex(**kwargs) + r'\\ \hline ' +\
-		       ' \\\\\n'.join(i.emit_latex(**kwargs) for i in self.children[1:]) + r'\end{tabular}'
+		res = r'\begin{table}' + '\n' + caption_latex + '\n'
+		res += r'\begin{tabular}' + alignment_string + '\n'
+		res += self.children[0].emit_latex(**kwargs) + r'\\ \hline '
+		res += ' \\\\\n'.join(i.emit_latex(**kwargs) for i in self.children[1:])
+		res += r'\end{tabular}' + '\n' + '\end{table}'
+		return res
 
 
 class TableRow(Node):
@@ -501,12 +541,15 @@ class Content(Node):
 		dtype = globalv.content_filetypes(self.src)
 		if dtype == 'image':
 			elem = r'\includegraphics[width=\textwidth]{%s}' % self.src
+		else:
+			elem = ''
 
 		return r'''
 \begin{figure}
-\centering
+\begin{center}
 \caption{%s}
 %s
+\end{center}
 \end{figure}
 ''' % (self.title, elem)
 
@@ -534,16 +577,22 @@ class ImplicitEmail(TextNode):
 %s
 }}}''' % (self.text, self.text)
 
+	def emit_latex(self, **kwargs):
+		return r'\href{mailto:%s}{%s}' % (self.text, self.text)
+
 
 # For text ----------------------------------------------------------------------
 
 class Plaintext(TextNode):
 	pass
 
-
+# TODO: Shouldn't this be a text node?
 class CodeInline(Node):
 	def emit_html(self, **kwargs):
 		return "<code>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</code>"
+
+	def emit_latex(self, **kwargs):
+		return r'\texttt{' + ''.join(i.emit_html(**kwargs) for i in self.children) + '}'
 
 
 class Emph(Node):
@@ -576,7 +625,7 @@ class StrongEmph(Node):
 		return r'{\b \i ' + ''.join(i.emit_rtf(**kwargs) for i in self.children) + '}'
 
 	def emit_latex(self, **kwargs):
-		return r'\textit{\textbf' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}}'
+		return r'\textit{\textbf{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}}'
 
 
 class Strikethrough(Node):
@@ -693,6 +742,7 @@ class Int(Node):
 			''.join(i.emit_latex(**kwargs) for i in self.children[2:])
 		)
 
+#TODO: Properly nest Subscript and Superscript nodes, having both the base and "exponent"
 
 class SuperscriptBrackets(Node):
 	def emit_html(self, **kwargs):

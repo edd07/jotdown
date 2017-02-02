@@ -37,6 +37,7 @@ text_tokens = [
 	(r'»', 'MathInline_CLOSE'),
 
 	(r'!\[([^\]]*)\]\(([^\)\s]*)\s*(?:"([^"]*)"\s*)?\)', 'Image'),
+	# TODO: Support links from other protocols
 	(r'(https?://\S+)', 'ImplicitLink'),
 	(r'\[([^\]]*)\]\(([^\)]*)\)', 'Link'),
 

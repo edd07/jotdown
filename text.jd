@@ -52,7 +52,7 @@ Text can be formatted with asterisks as *italics*, **bold**, but ignored inside 
 There are also alternate tokens (underscores) for _italics_ and __bold__, but they will be ignored if it looks like a variable_name
 The tags can be used like this: **nested *italics* in bold**
 Or combined like this: ***strong emphasis*** and ___again___
-This is an equation inline «a^2 + b^2 = c^2» with more text after it and a greek «lambda»etter.
+This is an equation inline «a^2 + b^2 = c^2» with more text after it & a greek «lambda»etter.
 This is some ~~strikethrough~~ text, like on Github, and a lonely ~ tilde rendered normally
 This is {surrounded by braces}, this is preceded by a \backslash
 
