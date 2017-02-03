@@ -179,7 +179,11 @@ class HorizontalRule(Node):
 		return '\n' + r'\rule{\textwidth}{1pt}' + '\n'
 
 
-class UList(Node):
+class List(Node):
+	pass
+
+
+class UList(List):
 	def emit_html(self, **kwargs):
 		res = "<ul>"
 		for item in self.children:
@@ -195,7 +199,7 @@ class UList(Node):
 		return res
 
 
-class OList(Node):
+class OList(List):
 	def __init__(self, children=None, list_type='1', start=1):
 		super().__init__(children)
 		self.start = start
