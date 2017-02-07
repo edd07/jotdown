@@ -56,7 +56,9 @@ elif os.path.isdir(args.input):
 		os.makedirs(args.output)
 	if not os.path.isdir(args.output):
 		raise Exception(args.output + ' exists but is not a directory')
-	if os.path.realpath(args.output).startswith(os.path.realpath(args.input)):
+	if os.path.realpath(args.output).startswith(os.path.realpath(args.input) + os.path.sep):
+		print(os.path.realpath(args.output))
+		print(os.path.realpath(args.input))
 		raise Exception('Output path cannot be a subdirectory of the input folder')
 
 	# Copy the css file over to the new folder
