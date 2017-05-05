@@ -12,6 +12,7 @@ re_heading_underline = compile(r'(-+|=+)\s*\n', flags=re_flags)
 re_heading_hashes = compile(r'(#+)([^#]*)#*', flags=re_flags)
 re_ulistitem = compile(r'^(\t*)[\*\-\+]\s+', flags=re_flags)
 re_olistitem = compile(r'^(\t*)(\w+)\.\s+', flags=re_flags)
+re_checklistitem = compile(r'^(\t*)\[\s*([xX]?)\s*\]\s+', flags=re_flags)
 re_code_amb = compile(r'^```\s*$', flags=re_flags)
 re_code_open = compile(r'^```([\w\d+#][\w\d+#\s]*)$', flags=re_flags)
 re_math_open = compile(r'^«««\s*$', flags=re_flags)
@@ -197,9 +198,15 @@ def _block_is_underline_heading(block):
 
 
 def block_is_list(block):
+	3
 	for line in block:
+		# Check if unordered
 		if re_ulistitem.match(line):
 			continue
+		# Check if checklist
+		if re_checklistitem.match(line):
+			continue
+		# Check if ordered
 		m = re_olistitem.match(line)
 		if m:
 			if lex_olist(m):
@@ -256,7 +263,10 @@ def block_is_blockquote(block):
 def list_item_text(item):
 	if match(re_olistitem, item):
 		return sub(re_olistitem, '', item)
-	return sub(re_ulistitem, '', item)
+	elif match(re_checklistitem, item):
+		return sub(re_olistitem, '', item)
+	else:
+		return sub(re_ulistitem, '', item)
 
 
 def cell_align(cell):

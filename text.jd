@@ -25,6 +25,11 @@ Another list of things:
 	* Nested unnumbered
 3. Number three
 
+[ ] This is a box
+	[X] This is checked and nested
+[X] This is crossed
+[ ] To make checklists
+
 A block of code:
 
 ```language
@@ -122,3 +127,4 @@ Video
 ![video](https://upload.wikimedia.org/wikipedia/en/transcoded/c/c3/L%27Arrivee_d%27un_train_en_gare_de_la_Ciotat%2C_1895.ogv/L%27Arrivee_d%27un_train_en_gare_de_la_Ciotat%2C_1895.ogv.480p.webm "L'Arrivée d'un train en gare de La Ciotat")
 
 [citation]: Because this is a citation, *with* **format**
+[unused]: Extra citation unused in the text. Only shows up in with `--citations` option

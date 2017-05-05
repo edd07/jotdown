@@ -220,6 +220,10 @@ class OList(List):
 		return res
 
 
+class CheckList(List):
+	pass
+
+
 class ReferenceList(OList):
 	def __init__(self):
 		items = [ReferenceItem(ref_key, content[0]) for ref_key, content in globalv.references.items()]
@@ -243,15 +247,32 @@ class ListItem(Node):
 	def emit_html(self, **kwargs):
 		res = ["<li><span>", ''.join(i.emit_html(**kwargs) for i in self.children[:-1])]
 
-		if len(self.children) > 0 and isinstance(self.children[-1], List):
+		if self.children and isinstance(self.children[-1], List):
 			res.append("</span>" + self.children[-1].emit_html(**kwargs))
-		elif len(self.children) > 0:
+		elif self.children:
 			res.append(self.children[-1].emit_html(**kwargs) + "</span>")
 
 		return ''.join(res)
 
 	def emit_latex(self, **kwargs):
 		return r'\item ' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '\n'
+
+
+class ChecklistItem(Node):
+	def __init__(self, checked, children):
+		self.state = checked
+		super().__init__(children)
+
+	def emit_html(self, **kwargs):
+		res = ["<li><span>", ''.join(i.emit_html(**kwargs) for i in self.children[:-1])]
+
+		if self.children and isinstance(self.children[-1], List):
+			res.append("</span>" + self.children[-1].emit_html(**kwargs))
+		elif self.children:
+			res.append(self.children[-1].emit_html(**kwargs) + "</span>")
+
+		return ''.join(res)
+
 
 
 class ReferenceItem(Node):
@@ -522,7 +543,7 @@ class Content(Node):
 		super().__init__(children)
 		self.alt = alt
 		self.src = src
-		self.title = title
+		self.title = title if title else ''
 
 	def emit_html(self, **kwargs):
 		# TODO: Allow embedding of data to eliminate the need to link to it (maybe even downloading stuff from the web

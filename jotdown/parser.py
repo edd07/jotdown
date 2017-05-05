@@ -27,11 +27,17 @@ def parse(file):
 			indent_stack = [-1]
 
 			for line in block:
-				ordered = False
+				# TODO: This is really ugly
+				list_type = 'unordered'  # by default
 				m = re_ulistitem.match(line)
 				if not m:
-					ordered = True
+					list_type = 'ordered'
 					m = re_olistitem.match(line)
+					if not m:
+						list_type = 'checklist'
+						m = re_checklistitem.match(line)
+						if not m:
+							raise Exception('Malformed list item: ' + line)
 
 				new_indent = len(m.group(1))
 
@@ -40,19 +46,25 @@ def parse(file):
 					while new_indent > indent_stack[-1]:
 						indent_stack.append(indent_stack[-1] + 1)
 
-						if ordered:
-							list_type, start = lex_olist(m)
-							list_stack.append(OList(list_type=list_type, start=start))
-						else:
+						if list_type == 'ordered':
+							olist_type, start = lex_olist(m)
+							list_stack.append(OList(list_type=olist_type, start=start))
+						elif list_type == 'unordered':
 							list_stack.append(UList())
+						elif list_type == 'checklist':
+							list_stack.append(CheckList())
 				elif new_indent < indent_stack[-1]:
 					# Need to close nested lists
 					while new_indent < indent_stack[-1]:
 						indent_stack.pop()
 						closed_list = list_stack.pop()
 						list_stack[-1].children[-1].children.append(closed_list)
-
-				list_stack[-1].children.append(ListItem(parse_text(list_item_text(line))))
+				if isinstance(list_stack[-1], CheckList):
+					m = re_checklistitem.match(line)
+					checked = bool(m.group(2))
+					list_stack[-1].children.append(ChecklistItem(checked, parse_text(list_item_text(line))))
+				else:
+					list_stack[-1].children.append(ListItem(parse_text(list_item_text(line))))
 
 			# Finih closing remaining nested lists
 			while len(list_stack) > 1:
