@@ -176,7 +176,7 @@ ol>li {
 	counter-increment: olcount;
 }
 
-ol li::before {
+ol>li::before {
 	content: counter(olcount) ") ";
 	font-style: italic;
 }
@@ -199,8 +199,27 @@ ol[type='i']>li::before {
 }
 
 ul {
-	list-style: round;
+	list-style: disc;
 	font-size: 10pt;
+}
+
+ul.checklist {
+	list-style: none;
+}
+
+ul.checklist>li:before {
+	display: block;
+	float: left;
+	clear: none;
+	margin-left: -1.25em;
+}
+
+ul.checklist>li.checked:before {
+	content: "☒";
+}
+
+ul.checklist>li.unchecked:before {
+	content: "☐";
 }
 
 a {
