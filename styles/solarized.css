@@ -122,6 +122,10 @@ ul {
 	list-style: square;
 }
 
+ul.checklist {
+	list-style: none;
+}
+
 li {
 	color: #d33682; /* magenta */
 }
@@ -130,8 +134,27 @@ li span {
 	color: #657b83; /* base00 */
 }
 
-.references li {
+ul.checklist li:before {
+	display: block;
+	float: left;
+	clear: none;
+	margin-left: -1.25em;
+}
 
+ul.checklist li.checked:before {
+	content: "☒";
+}
+
+ul.checklist li.unchecked:before {
+	content: "☐";
+}
+
+ul.checklist li.checked span {
+	text-decoration: line-through;
+}
+
+.references li {
+/* TODO: copy the reference style from IEEE */
 }
 
 blockquote {

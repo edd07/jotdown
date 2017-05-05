@@ -220,8 +220,13 @@ class OList(List):
 		return res
 
 
-class CheckList(List):
-	pass
+class CheckList(UList):
+	def emit_html(self, **kwargs):
+		res = '<ul class="checklist">'
+		for item in self.children:
+			res += item.emit_html(**kwargs)
+		res += '</ul>'
+		return res
 
 
 class ReferenceList(OList):
@@ -260,11 +265,12 @@ class ListItem(Node):
 
 class ChecklistItem(Node):
 	def __init__(self, checked, children):
-		self.state = checked
+		self.checked = checked
 		super().__init__(children)
 
 	def emit_html(self, **kwargs):
-		res = ["<li><span>", ''.join(i.emit_html(**kwargs) for i in self.children[:-1])]
+		css_class = 'checked' if self.checked else 'unchecked'
+		res = ['<li class="%s"><span>' % css_class, ''.join(i.emit_html(**kwargs) for i in self.children[:-1])]
 
 		if self.children and isinstance(self.children[-1], List):
 			res.append("</span>" + self.children[-1].emit_html(**kwargs))

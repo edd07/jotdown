@@ -264,7 +264,7 @@ def list_item_text(item):
 	if match(re_olistitem, item):
 		return sub(re_olistitem, '', item)
 	elif match(re_checklistitem, item):
-		return sub(re_olistitem, '', item)
+		return sub(re_checklistitem, '', item)
 	else:
 		return sub(re_ulistitem, '', item)
 
