@@ -130,30 +130,32 @@ li {
 	color: #d33682; /* magenta */
 }
 
-li span {
+li>span {
 	color: #657b83; /* base00 */
 }
 
-ul.checklist li:before {
+ul.checklist>li:before {
 	display: block;
 	float: left;
 	clear: none;
 	margin-left: -1.25em;
 }
 
-ul.checklist li.checked:before {
-	content: "☒";
+ul.checklist>li.checked:before {
+	color: #859900; /* green */
+	content: "☑";
 }
 
-ul.checklist li.unchecked:before {
+ul.checklist>li.unchecked:before {
+	color: #dc322f; /* red */
 	content: "☐";
 }
 
-ul.checklist li.checked span {
+ul.checklist>li.checked span {
 	text-decoration: line-through;
 }
 
-.references li {
+.references>li {
 /* TODO: copy the reference style from IEEE */
 }
 
