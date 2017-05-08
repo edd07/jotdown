@@ -151,7 +151,7 @@ ul.checklist>li.unchecked:before {
 	content: "☐";
 }
 
-ul.checklist>li.checked span {
+ul.checklist>li.checked>span {
 	text-decoration: line-through;
 }
 
@@ -184,10 +184,10 @@ img, audio, video, object {
 
 table {
 	margin: auto;
+	border-collapse: collapse;
 }
 
 table, td, th {
-	border-collapse: collapse;
 	border: 1px solid #6c71c4; /* violet */
 }
 
