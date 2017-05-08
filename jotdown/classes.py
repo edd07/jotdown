@@ -380,7 +380,9 @@ class Table(Node):
 		caption_html = ''
 		if self.caption:
 			caption_html = '<caption>' + ''.join(i.emit_html(**kwargs) for i in self.caption) + '</caption>'
-		return '<table>' + caption_html + ''.join(i.emit_html(**kwargs) for i in self.children) + '</table>'
+		return '<table>' + caption_html + \
+			'<thead>' + self.children[0].emit_html(**kwargs) + '</thead>' +\
+		    '<tbody>' + ''.join(i.emit_html(**kwargs) for i in self.children[1:]) + '</tbody></table>'
 
 	def emit_latex(self, **kwargs):
 		caption_latex = ''
@@ -428,8 +430,8 @@ class TableCell(Node):
 		self.align = align
 
 	def emit_html(self, **kwargs):
-		return "<td style=\"text-align: %s;\">" % self.align_map[self.align] +\
-		       ''.join(i.emit_html(**kwargs) for i in self.children) + "</td>"
+		return '<td style="text-align: %s;">' % self.align_map[self.align] +\
+		       ''.join(i.emit_html(**kwargs) for i in self.children) + '</td>'
 
 	def emit_latex(self, **kwargs):
 		return ''.join(i.emit_latex(**kwargs) for i in self.children)
