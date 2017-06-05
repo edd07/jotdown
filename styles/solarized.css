@@ -63,6 +63,12 @@ a {
 	color: #268bd2;
 }
 
+/* Styling for external links */
+a[href^="http://"]:after, a[href^="https://"]:after {
+	content: " 🔗";
+	text-decoration: none;
+}
+
 div.math {
 	padding: 16px;
 	text-align: center;
