@@ -26,7 +26,7 @@ Another list of things:
 3. Number three
 
 [ ] This is a box
-	[X] This is checked and nested
+	- [X] This is checked and nested
 [X] This is checked
 [ ] To make checklists
 

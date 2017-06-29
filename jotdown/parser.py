@@ -28,14 +28,14 @@ def parse(file):
 
 			for line in block:
 				# TODO: This is really ugly
-				list_type = 'unordered'  # by default
-				m = re_ulistitem.match(line)
+				list_type = 'checklist'  # by default
+				m = re_checklistitem.match(line)
 				if not m:
-					list_type = 'ordered'
-					m = re_olistitem.match(line)
+					list_type = 'unordered'
+					m = re_ulistitem.match(line)
 					if not m:
-						list_type = 'checklist'
-						m = re_checklistitem.match(line)
+						list_type = 'ordered'
+						m = re_olistitem.match(line)
 						if not m:
 							raise Exception('Malformed list item: ' + line)
 
