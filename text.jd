@@ -109,12 +109,12 @@ This is a [reference-style link][ref]. These can be rendered as citations with a
 Obligatory cat
 --------------
 
-![picture of a cat](http://placekitten.com/g/300/301 "Title text!")
+![picture of a cat](http://placekitten.com/g/300/301 "Captions with **format**!")
 
 GIFs
 ----
 
-![gif](https://upload.wikimedia.org/wikipedia/commons/3/3b/Circle_cos_sin.gif "Sine and cosine")
+![gif](https://upload.wikimedia.org/wikipedia/commons/3/3b/Circle_cos_sin.gif "*Sine* and *cosine*")
 
 Audio
 -----

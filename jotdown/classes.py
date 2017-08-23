@@ -26,6 +26,9 @@ class Node:
 	def emit_debug(self, indent=0, **kwargs):
 		return ('\t' * indent) + type(self).__name__ + '\n' + ''.join(i.emit_debug(indent + 1, **kwargs) for i in self.children)
 
+	def emit_jd(self, **kwargs):
+		return ''.join(i.emit_jd(**kwargs) for i in self.children)
+
 
 class TextNode(Node):
 	def __init__(self, text):
@@ -67,6 +70,9 @@ class TextNode(Node):
 		res = ('\t' * indent) + type(self).__name__ + ' ' + summary + '\n'
 		res += ''.join(i.emit_debug(indent + 1, **kwargs) for i in self.children)
 		return res
+
+	def emit_jd(self, **kwargs):
+		return self.text
 
 
 # For blocks -------------------------------------------------------------------------
@@ -170,6 +176,10 @@ class Heading(Node):
 		}
 		return levels.get(self.level, r'\subsubsection{') + r'\\'.join(i.emit_latex(**kwargs) for i in self.children) + '}\n'
 
+	def emit_jd(self, **kwargs):
+		# TODO: Emit the other style of heading canonically?
+		return '\n\n' + '#' * self.level + ' ' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '\n\n'
+
 
 class HorizontalRule(Node):
 	def emit_html(self, **kwargs):
@@ -177,6 +187,9 @@ class HorizontalRule(Node):
 
 	def emit_latex(self, **kwargs):
 		return '\n' + r'\rule{\textwidth}{1pt}' + '\n'
+
+	def emit_jd(self, **kwargs):
+		return '\n\n---\n\n'
 
 
 class List(Node):
@@ -197,6 +210,14 @@ class UList(List):
 			res += item.emit_latex(**kwargs)
 		res += '\n' + r'\end{itemize}' + '\n'
 		return res
+
+	def emit_jd(self, **kwargs):
+		res = []
+		for item in self.children:
+			if isinstance(item, List):
+				res.extend('\t' + i for i in item.emit_jd(**kwargs).split('\n'))
+			else:
+				res.append()
 
 
 class OList(List):
@@ -557,18 +578,18 @@ class Content(Node):
 		# TODO: Allow embedding of data to eliminate the need to link to it (maybe even downloading stuff from the web
 		dtype = globalv.content_filetypes(self.src)
 		if dtype == 'image':
-			elem = '<img src="%s" title="%s" alt="%s">' % (self.src, self.title, self.alt)
+			elem = '<img src="%s" title="%s" alt="%s">' % (self.src, self.title.emit_html(**kwargs), self.alt.emit_html(**kwargs))
 		elif dtype == 'audio':
-			elem = '<audio src="%s" controls>%s</audio>' % (self.src, self.alt)
+			elem = '<audio src="%s" controls>%s</audio>' % (self.src, self.alt.emit_html(**kwargs))
 		elif dtype == 'video':
-			elem = '<video src="%s" controls>%s</video>' % (self.src, self.alt)
+			elem = '<video src="%s" controls>%s</video>' % (self.src, self.alt.emit_html(**kwargs))
 		elif dtype == 'flash':
 			elem = '<object data="%s" type="application/x-shockwave-flash"></object>' % self.src
 		else:
 			elem = '<object data="%s"></object>' % self.src
 
 		# TODO: make figures a command line option
-		return '<figure>%s<figcaption>%s</figcaption></figure>' % (elem, self.title)
+		return '<figure>%s<figcaption>%s</figcaption></figure>' % (elem, self.title.emit_html(**kwargs))
 
 	def emit_latex(self, **kwargs):
 		dtype = globalv.content_filetypes(self.src)

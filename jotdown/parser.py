@@ -202,7 +202,10 @@ def parse_text(text):
 			globalv.references[ref_key] = Node(parse_text(reference_text)), reference_text
 
 		elif token == "Image":
-			node_stack[-1].children.append(Content(*groups))
+			alt, src, title = groups
+			#alt = Node(parse_text(alt))
+			#title = Node(parse_text(title))
+			node_stack[-1].children.append(Content(alt, src, title))
 
 	if len(stack) > 1:
 		raise Exception("Missing closing tag for %s at %s" % (stack[-1], repr(debug_text)))
