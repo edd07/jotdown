@@ -32,31 +32,7 @@ def parse(file):
 			nodes.append(MathBlock([parse_math(replace_math('\n'.join(block[1:-1])))]))
 
 		elif block_is_md_table(block):
-			header_content = block[0].split('|')
-			header = [TableHeader(parse_text(i)) for i in header_content]
-
-			alignment = list(map(cell_align, block[1].split('|')))
-
-			# Check if there is a caption
-			md_table = block[2:]
-			caption = None
-			if len(block) > 5:
-				for char in block[-2]:
-					if char not in '\t\n -':
-						break
-				else:
-					caption = parse_text(block[-1])
-					md_table = block[2:-2]
-
-			table = Table(caption, alignment, [TableRow(header)])
-
-			for line in md_table:
-				cells = []
-				for content, align in zip(line.split('|'), alignment):
-					cells.append(TableCell(align, parse_text(content)))
-				table.children.append(TableRow(cells))
-
-			nodes.append(table)
+			nodes.append(_parse_table(block))
 
 		elif block_is_blockquote(block):
 			def remove_gt(line):
@@ -254,6 +230,38 @@ def _parse_list(block):
 		list_stack[-1].children.append(closed_list)
 
 	return list_stack[0]
+
+
+def _parse_table(block):
+	"""
+	Returns a Table Node from a block of text
+	"""
+
+	header_content = block[0].split('|')
+	header = [TableHeader(parse_text(i)) for i in header_content]
+
+	column_alignment = list(map(cell_align, block[1].split('|')))
+
+	# Check if there is a caption
+	md_table = block[2:]
+	caption = None
+	if len(block) > 5:
+		for char in block[-2]:
+			if char not in '\t\n -':
+				break
+		else:
+			caption = parse_text(block[-1])
+			md_table = block[2:-2]
+
+	table = Table(caption, column_alignment, [TableRow(header)])
+
+	for line in md_table:
+		cells = []
+		for content, cell_alignment in zip(line.split('|'), column_alignment):
+			cells.append(TableCell(cell_alignment, parse_text(content)))
+		table.children.append(TableRow(cells))
+
+	return table
 
 
 if __name__ == "__main__":
