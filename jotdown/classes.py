@@ -572,7 +572,7 @@ class Content(Node):
 		super().__init__(children)
 		self.alt = alt
 		self.src = src
-		self.title = title if title else ''
+		self.title = title if title else TextNode('')
 
 	def emit_html(self, **kwargs):
 		# TODO: Allow embedding of data to eliminate the need to link to it (maybe even downloading stuff from the web

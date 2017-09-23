@@ -203,8 +203,8 @@ def parse_text(text):
 
 		elif token == "Image":
 			alt, src, title = groups
-			#alt = Node(parse_text(alt))
-			#title = Node(parse_text(title))
+			alt = Node(parse_text(alt))
+			title = Node(parse_text(title))
 			node_stack[-1].children.append(Content(alt, src, title))
 
 	if len(stack) > 1:
