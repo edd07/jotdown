@@ -86,7 +86,11 @@ disabling_tokens = {
 text_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in text_tokens]
 math_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in math_tokens]
 
+
 def get_blocks(file):
+	"""
+	Yields Blocks from an open file
+	"""
 	block = []
 	in_blankable_block = False
 	for line in file:
@@ -113,6 +117,9 @@ def get_blocks(file):
 
 
 def get_text_tokens(text):
+	"""
+	Yields tokens of the Text type from a string of plain text
+	"""
 	disabled = False
 	enabling_char = ''
 	disabled_token = ''
@@ -148,6 +155,9 @@ def get_text_tokens(text):
 
 
 def get_math_tokens(text):
+	"""
+	Yields tokens of the Math type from a string of plain text
+	"""
 	while text:
 		for exp, val in math_tokens:
 			m = match(exp, text)
@@ -198,7 +208,6 @@ def _block_is_underline_heading(block):
 
 
 def block_is_list(block):
-	3
 	for line in block:
 		# Check if checklist
 		if re_checklistitem.match(line):
@@ -238,7 +247,7 @@ def block_is_md_table(block):
 		else:
 			md_table = block[:-2]
 
-	# The same number of columns for every row
+	# Must have he same number of columns for every row
 	for line in md_table:
 		row_cols = len(line.split('|'))
 
@@ -261,6 +270,10 @@ def block_is_blockquote(block):
 
 
 def list_item_text(item):
+	"""
+	Return only the text for a list item without its Jotdown syntax
+	"""
+
 	if match(re_olistitem, item):
 		return sub(re_olistitem, '', item)
 	elif match(re_checklistitem, item):
@@ -301,6 +314,10 @@ def lex_olist(m):
 
 
 def lex_heading(block):
+	"""
+	Return a tuple (level, text) from a Heading block
+	"""
+
 	if _block_is_underline_heading(block):
 		level = 1 if block[-1][0] == '=' else 2
 		return level, block[:-1]

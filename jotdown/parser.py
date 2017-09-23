@@ -8,7 +8,10 @@ import sys
 
 
 def parse(file):
-	# Block-level "parser"
+	"""
+	Returns a Document Node, the root of a syntax tree. Splits a file into Blocks and parses their contents individually
+	"""
+
 	blocks = get_blocks(file)
 	nodes = []
 	for block in blocks:
@@ -41,6 +44,7 @@ def parse(file):
 			nodes.append(Blockquote(subnodes))
 
 		else:
+			# Default case, paragraphs
 			subnodes = []
 			for line in block:
 				text_nodes = parse_text(line)
@@ -53,12 +57,15 @@ def parse(file):
 
 
 def parse_text(text):
-	# (Formattable text)-level parser
+	"""
+	Returns a Node, root to a syntax subtree, from plain text
+	"""
 
 	# Start the parser up with a dummy top-level node
+	# Keep track of the nested nodes and their type
 	stack = ['Dummy_OPEN']
 	node_stack = [Node()]
-	debug_text = text[:50]
+	debug_text = text[:50]  # For error messages
 
 	for token, groups in get_text_tokens(text):
 		if '_OPEN' in token or '_CLOSE' in token:
@@ -136,9 +143,14 @@ def parse_text(text):
 
 
 def parse_math(text):
+	"""
+	Returns a Math Node from a plain text
+	"""
+
+	# Keep track of the nested nodes and their types
 	stack = ['Math_OPEN']
 	node_stack = [Math()]
-	debug_text = text[:50]
+	debug_text = text[:50]  # For error messages
 
 	for token, text in get_math_tokens(text):
 		if '_OPEN' in token:
@@ -170,7 +182,7 @@ def parse_math(text):
 
 def _parse_list(block):
 	"""
-	Returns a List (ordered, unordered or checklist) from a block of text
+	Returns a List Node (ordered, unordered or checklist) from a block of text
 	"""
 	# Keep track of nested lists and their indent levels
 	list_stack = []
@@ -263,7 +275,7 @@ def _remove_gt(line):
 	"""
 	Remove the leading greater-than signs from lines belonging to a blockquote
 	"""
-	
+
 	if line[0] == '>':
 		return parse_text(line[1:])
 	else:
