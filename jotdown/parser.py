@@ -35,14 +35,9 @@ def parse(file):
 			nodes.append(_parse_table(block))
 
 		elif block_is_blockquote(block):
-			def remove_gt(line):
-				if line[0] == '>':
-					return parse_text(line[1:])
-				else:
-					return parse_text(line)
 			subnodes = []
 			for line in block:
-				subnodes.append(Node(remove_gt(line)))
+				subnodes.append(Node(_remove_gt(line)))
 			nodes.append(Blockquote(subnodes))
 
 		else:
@@ -262,6 +257,17 @@ def _parse_table(block):
 		table.children.append(TableRow(cells))
 
 	return table
+
+
+def _remove_gt(line):
+	"""
+	Remove the leading greater-than signs from lines belonging to a blockquote
+	"""
+	
+	if line[0] == '>':
+		return parse_text(line[1:])
+	else:
+		return parse_text(line)
 
 
 if __name__ == "__main__":
