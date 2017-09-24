@@ -40,7 +40,7 @@ def parse(file):
 		elif block_is_blockquote(block):
 			subnodes = []
 			for line in block:
-				subnodes.append(Node(_remove_gt(line)))
+				subnodes.append(Node(parse_text(_remove_gt(line))))
 			nodes.append(Blockquote(subnodes))
 
 		else:
@@ -277,9 +277,9 @@ def _remove_gt(line):
 	"""
 
 	if line[0] == '>':
-		return parse_text(line[1:])
+		return line[1:]
 	else:
-		return parse_text(line)
+		return line
 
 
 if __name__ == "__main__":
