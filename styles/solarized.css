@@ -63,6 +63,17 @@ a {
 	color: #268bd2;
 }
 
+/* Show a link's destination in print */
+@media print {
+	 a:after {
+		 content:" (" attr(href) ") ";
+	 }
+
+	a.reference:after, a.implicit:after {
+		content: none;
+	}
+}
+
 /* Styling for external links */
 a[href^="http://"]:after, a[href^="https://"]:after {
 	content: " 🔗";

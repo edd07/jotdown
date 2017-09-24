@@ -514,7 +514,7 @@ class ReferenceLink(Node):
 				ref_style=True,
 				**kwargs
 			)
-			return '%s<cite>[<a href="#%s">%d</a>]</cite>' % (emitted_html, self.ref_key, place)
+			return '%s<cite>[<a href="#%s" class="reference">%d</a>]</cite>' % (emitted_html, self.ref_key, place)
 		else:
 			_, href = globalv.references[self.ref_key]
 			href = html.escape(href)
@@ -610,7 +610,7 @@ class Content(Node):
 
 class ImplicitLink(TextNode):
 	def emit_html(self, **kwargs):
-		return '<a href="' + self.text + '">' + self.text + '</a>'
+		return '<a href="' + self.text + '" class="implicit">' + self.text + '</a>'
 
 	def emit_rtf(self, **kwargs):
 		return r'''{\field{\*\fldinst{HYPERLINK "%s"
@@ -621,9 +621,10 @@ class ImplicitLink(TextNode):
 	def emit_latex(self, **kwargs):
 		return r' \url{%s}' % self.text
 
+
 class ImplicitEmail(TextNode):
 	def emit_html(self, **kwargs):
-		return '<a href="mailto:' + self.text + '">' + self.text + '</a>'
+		return '<a href="mailto:' + self.text + '" class="implicit">' + self.text + '</a>'
 
 	def emit_rtf(self, **kwargs):
 		return r'''{\field{\*\fldinst{HYPERLINK "mailto:%s"
