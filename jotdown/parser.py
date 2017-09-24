@@ -105,7 +105,12 @@ def parse_text(text):
 				node_stack.append(node_class())
 
 		elif token == "Plaintext":
-			node_stack[-1].children.append(Plaintext(groups[0]))
+			# Combine consecutive Plaintext nodes to reduce the overall number of Nodes created
+			tos_children = node_stack[-1].children
+			if tos_children and isinstance(tos_children[-1], Plaintext):
+				tos_children[-1].text += groups[0]
+			else:
+				node_stack[-1].children.append(Plaintext(groups[0]))
 
 		elif token == "Math":
 			node_stack[-1].children.append(parse_math(replace_math(groups[0])))
