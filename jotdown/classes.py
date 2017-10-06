@@ -43,6 +43,7 @@ class TextNode(Node):
 
 	def emit_latex(self, **kwargs):
 		special_chars = (
+			# LATEX needs these characters escaped in source files
 			('\\', r'\textbackslash '),
 		    ('&', r'\& '),
 		    ('%', r'\%'),
@@ -53,8 +54,8 @@ class TextNode(Node):
 		    ('}', r'\}'),
 		    ('~', r'\textasciitilde '),
 		    ('^', r'\textasciicircum '),
-			('—', r'---'),
-			('–', r'--'),
+			('—', r'---'),  # em dash
+			('–', r'--'),   # en dash
 			('>', r'\textgreater '),
 			('<', r'\textless '),
 		)
@@ -178,7 +179,7 @@ class Heading(Node):
 
 	def emit_jd(self, **kwargs):
 		# TODO: Emit the other style of heading canonically?
-		return '\n\n' + '#' * self.level + ' ' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '\n\n'
+		return '#' * self.level + ' ' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '\n\n'
 
 
 class HorizontalRule(Node):
@@ -189,7 +190,7 @@ class HorizontalRule(Node):
 		return '\n' + r'\rule{\textwidth}{1pt}' + '\n'
 
 	def emit_jd(self, **kwargs):
-		return '\n\n---\n\n'
+		return '---\n\n'
 
 
 class List(Node):
@@ -211,13 +212,14 @@ class UList(List):
 		res += '\n' + r'\end{itemize}' + '\n'
 		return res
 
-	def emit_jd(self, **kwargs):
-		res = []
-		for item in self.children:
-			if isinstance(item, List):
-				res.extend('\t' + i for i in item.emit_jd(**kwargs).split('\n'))
-			else:
-				res.append()
+	def emit_jd(self, depth=0, **kwargs):
+		list_res = []
+		for list_item in self.children:
+			list_item_res = []
+			for node in list_item.children:
+					list_item_res.append(node.emit_jd(depth=depth + 1, **kwargs))
+			list_res.append('\t' * depth + '* ' +''.join(list_item_res))
+		return '\n'.join(list_res) + ('\n' if depth == 0 else '')
 
 
 class OList(List):
@@ -239,6 +241,16 @@ class OList(List):
 			res += item.emit_latex(**kwargs)
 		res += '\n' + r'\end{enumerate}' + '\n'
 		return res
+
+	def emit_jd(self, depth=0, **kwargs):
+		list_res = []
+		for n, list_item in enumerate(self.children):
+			list_item_res = []
+			for node in list_item.children:
+				list_item_res.append(node.emit_jd(depth=depth + 1, **kwargs))
+			# TODO: Support the other list types
+			list_res.append('\t' * depth + str(n + 1) + ' ' +''.join(list_item_res))
+		return '\n'.join(list_res) + ('\n' if depth == 0 else '')
 
 
 class CheckList(UList):
@@ -325,6 +337,9 @@ class Paragraph(Node):
 	def emit_latex(self, **kwargs):
 		return r'\par ' + r'\\ '.join(i.emit_latex(**kwargs) for i in self.children)
 
+	def emit_jd(self, **kwargs):
+		return ''.join(i.emit_jd(**kwargs) for i in self.children) + '\n'
+
 
 class CodeBlock(Node):
 	def emit_html(self, **kwargs):
@@ -344,6 +359,9 @@ class CodeBlock(Node):
 		       ''.join(i.emit_latex(**kwargs) for i in self.children) + \
 		       r'\end{lstlisting}' + '\n'
 
+	def emit_jd(self, **kwargs):
+		return '``\n' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '```\n'
+
 
 class MathBlock(Node):
 	def emit_html(self, **kwargs):
@@ -360,6 +378,9 @@ class MathBlock(Node):
 
 	def emit_latex(self, **kwargs):
 		return r'\begin{gather*}' + '\n' + '\n'.join(i.emit_latex(**kwargs) for i in self.children) + '\n' + r'\end{gather*}'
+
+	def emit_jd(self, **kwargs):
+		return '«««\n' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '»»»\n'
 
 
 class Blockquote(Node):
@@ -378,6 +399,9 @@ class Blockquote(Node):
 	def emit_latex(self, **kwargs):
 		return r'\begin{displayquote}' + '\n' +\
 	r'\\'.join(i.emit_latex(**kwargs) for i in self.children) + r'\end{displayquote}' + '\n'
+
+	def emit_jd(self, **kwargs):
+		return ''.join('>' + i.emit_jd(**kwargs) for i in self.children) + '\n'
 
 
 class Math(Node):
@@ -421,6 +445,9 @@ class Table(Node):
 		res += ' \\\\\n'.join(i.emit_latex(**kwargs) for i in self.children[1:])
 		res += r'\end{tabular}' + '\n' + '\end{table}'
 		return res
+
+	def emit_jd(self, **kwargs):
+		return '«' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '»'
 
 
 class TableRow(Node):
@@ -495,6 +522,10 @@ class Link(Node):
 			url,
 			self.linked_text.emit_latex(link_translation=link_translation, **kwargs)
 		)
+
+	def emit_jd(self, **kwargs):
+		# No extension translation needed when exporting to .jd
+		return '[%s](%s)' % (self.linked_text.emit_jd(**kwargs), self.url)
 
 
 class ReferenceLink(Node):
@@ -607,6 +638,11 @@ class Content(Node):
 \end{figure}
 ''' % (self.title, elem)
 
+	def emit_jd(self, **kwargs):
+		title_text = self.title.emit_jd(**kwargs)
+		title = ' "' + title_text + '"' if title_text else ''
+		return '![%s](%s%s)' % (self.alt.emit_jd(**kwargs), self.src, title)
+
 
 class ImplicitLink(TextNode):
 	def emit_html(self, **kwargs):
@@ -649,6 +685,9 @@ class CodeInline(Node):
 	def emit_latex(self, **kwargs):
 		return r'\texttt{' + ''.join(i.emit_html(**kwargs) for i in self.children) + '}'
 
+	def emit_jd(self, **kwargs):
+		return '`' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '`'
+
 
 class Emph(Node):
 	def emit_html(self, **kwargs):
@@ -659,6 +698,9 @@ class Emph(Node):
 
 	def emit_latex(self, **kwargs):
 		return r'\textit{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}'
+
+	def emit_jd(self, **kwargs):
+		return '*' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '*'
 
 
 class Strong(Node):
@@ -671,6 +713,9 @@ class Strong(Node):
 	def emit_latex(self, **kwargs):
 		return r'\textbf{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}'
 
+	def emit_jd(self, **kwargs):
+		return '**' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '**'
+
 
 class StrongEmph(Node):
 	def emit_html(self, **kwargs):
@@ -682,6 +727,9 @@ class StrongEmph(Node):
 	def emit_latex(self, **kwargs):
 		return r'\textit{\textbf{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}}'
 
+	def emit_jd(self, **kwargs):
+		return '***' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '***'
+
 
 class Strikethrough(Node):
 	def emit_html(self, **kwargs):
@@ -689,6 +737,9 @@ class Strikethrough(Node):
 
 	def emit_rtf(self, **kwargs):
 		return r'{\strike ' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
+
+	def emit_jd(self, **kwargs):
+		return '~~' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '~~'
 
 
 # MATH -------------------
@@ -703,6 +754,9 @@ class MathInline(Node):
 			text = text.replace(regex, subst)
 		return '$' + text + '$'
 
+	def emit_jd(self, **kwargs):
+		return '«' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '»'
+
 
 class Parenthesis(Node):
 	def emit_html(self, **kwargs):
@@ -715,6 +769,9 @@ class Parenthesis(Node):
 	def emit_latex(self, **kwargs):
 		return '(' + ''.join(i.emit_latex(**kwargs) for i in self.children) + ')'
 
+	def emit_jd(self, **kwargs):
+		return '(' + ''.join(i.emit_jd(**kwargs) for i in self.children) + ')'
+
 
 class Braces(Node):
 	def emit_html(self, **kwargs):
@@ -722,6 +779,9 @@ class Braces(Node):
 
 	def emit_latex(self, **kwargs):
 		return r'\{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + r'\}'
+
+	def emit_jd(self, **kwargs):
+		return '{' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '}'
 
 
 class Brackets(Node):
@@ -731,10 +791,12 @@ class Brackets(Node):
 	def emit_mathml(self, **kwargs):
 		return ''.join(i.emit_mathml(**kwargs) for i in self.children)
 
+	def emit_jd(self, **kwargs):
+		return '[' + ''.join(i.emit_jd(**kwargs) for i in self.children) + ']'
+
 
 class Sum(Node):
 	def emit_html(self, **kwargs):
-		# return "∑"
 		return """
 	<math><mstyle displaystyle="true"><mrow>
 	<munderover>
@@ -751,6 +813,13 @@ class Sum(Node):
 			self.children[1].emit_latex(**kwargs),
 			self.children[0].emit_latex(**kwargs),
 			''.join(i.emit_latex(**kwargs) for i in self.children[2:])
+		)
+
+	def emit_jd(self, **kwargs):
+		return r'sum[%s %s %s]' % (
+			self.children[0].emit_jd(**kwargs),
+			self.children[1].emit_jd(**kwargs),
+			''.join(i.emit_jd(**kwargs) for i in self.children[2:])
 		)
 
 
@@ -775,6 +844,13 @@ class Prod(Node):
 			''.join(i.emit_latex(**kwargs) for i in self.children[2:])
 		)
 
+	def emit_jd(self, **kwargs):
+		return r'prod[%s %s %s]' % (
+			self.children[0].emit_jd(**kwargs),
+			self.children[1].emit_jd(**kwargs),
+			''.join(i.emit_jd(**kwargs) for i in self.children[2:])
+		)
+
 
 class Int(Node):
 	def emit_html(self, **kwargs):
@@ -797,6 +873,13 @@ class Int(Node):
 			''.join(i.emit_latex(**kwargs) for i in self.children[2:])
 		)
 
+	def emit_jd(self, **kwargs):
+		return r'int[%s %s %s]' % (
+			self.children[0].emit_jd(**kwargs),
+			self.children[1].emit_jd(**kwargs),
+			''.join(i.emit_jd(**kwargs) for i in self.children[2:])
+		)
+
 #TODO: Properly nest Subscript and Superscript nodes, having both the base and "exponent"
 
 class SuperscriptBrackets(Node):
@@ -809,6 +892,9 @@ class SuperscriptBrackets(Node):
 	def emit_latex(self, **kwargs):
 		return '^{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}'
 
+	def emit_jd(self, **kwargs):
+		return '^[' + ''.join(i.emit_jd(**kwargs) for i in self.children) + ']'
+
 
 class SubscriptBrackets(Node):
 	def emit_html(self, **kwargs):
@@ -819,6 +905,9 @@ class SubscriptBrackets(Node):
 
 	def emit_latex(self, **kwargs):
 		return '_{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}'
+
+	def emit_jd(self, **kwargs):
+		return '_[' + ''.join(i.emit_jd(**kwargs) for i in self.children) + ']'
 
 
 class Subscript(TextNode):
@@ -831,6 +920,9 @@ class Subscript(TextNode):
 	def emit_latex(self, **kwargs):
 		return '_{' + self.text + '}'
 
+	def emit_jd(self, **kwargs):
+		return '_' + self.text
+
 
 class Superscript(TextNode):
 	def emit_html(self, **kwargs):
@@ -841,6 +933,9 @@ class Superscript(TextNode):
 
 	def emit_latex(self, **kwargs):
 		return '^{' + self.text + '}'
+
+	def emit_jd(self, **kwargs):
+		return '^' + self.text
 
 
 class Identifier(TextNode):
@@ -866,6 +961,9 @@ class Comment(TextNode):
 	def emit_latex(self, **kwargs):
 		return r' \text{' + self.text + '} '
 
+	def emit_jd(self, **kwargs):
+		return ' # ' + self.text + ' # '
+
 
 class Number(TextNode):
 	def emit_mathml(self, **kwargs):
@@ -878,3 +976,6 @@ class Newline(TextNode):
 
 	def emit_latex(self, **kwargs):
 		return r'\\'
+
+	def emit_jd(self, **kwargs):
+		return '\n'

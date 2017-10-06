@@ -35,6 +35,7 @@ style_ext = {
 	'rtf': '.rtf',
 	'latex': '.tex',
 	'debug': '',
+	'jd': '',
 }
 
 # Use a built-in style file before attempting to load a custom one
