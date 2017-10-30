@@ -880,6 +880,20 @@ class Int(Node):
 			''.join(i.emit_jd(**kwargs) for i in self.children[2:])
 		)
 
+class Sqrt(Node):
+	def emit_html(self, **kwargs):
+		return '√<span style="border-top: 1px solid">%s</span>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+
+	def emit_mathml(self, **kwargs):
+		return '<msqrt>%s</msqrt>' % ''.join(i.emit_mathml(**kwargs) for i in self.children)
+
+	def emit_latex(self, **kwargs):
+		return r'\sqrt{%s}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
+
+	def emit_jd(self, **kwargs):
+		return r'sqrt[%s]' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+
+
 #TODO: Properly nest Subscript and Superscript nodes, having both the base and "exponent"
 
 class SuperscriptBrackets(Node):

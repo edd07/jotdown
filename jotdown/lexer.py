@@ -57,6 +57,7 @@ math_tokens = [
 	(r'(sum\[)', "Sum_OPEN"),
 	(r'(prod\[)', "Prod_OPEN"),
 	(r'(int\[)', "Int_OPEN"),
+	(r'(sqrt\[)', "Sqrt_OPEN"),
 	(r'(\()', "Parenthesis_OPEN"),
 	(r'(\))', "Parenthesis_CLOSE"),
 	(r'({)', "Braces_OPEN"),
@@ -75,7 +76,7 @@ math_tokens = [
 	(r'(\n)', 'Newline')
 ]
 
-bracket_closable = ["SubscriptBrackets", "SuperscriptBrackets", "Sum", "Prod", "Int"]
+bracket_closable = ["SubscriptBrackets", "SuperscriptBrackets", "Sum", "Prod", "Int", "Sqrt"]
 
 # Tokens that disable text parsing : Until this is encountered, yield this token
 disabling_tokens = {
