@@ -93,14 +93,25 @@ class Document(Node):
 		else:
 			css_string = '<link rel="stylesheet" href="%s"/>' % stylesheet
 
-		res = '<!DOCTYPE html><html><head><title>%s</title><meta charset="UTF-8">%s</head><body>'\
-		      % (self.name, css_string)
-		res += '\n'.join(block.emit_html(ref_style=ref_style, **kwargs) for block in self.children)
-		if ref_style:
-			res += '<footer>' + ReferenceList().emit_html(ref_style=True, **kwargs) + '</footer>'
-		res += '</body></html>'
+		footer = '<footer>%s</footer>' % ReferenceList().emit_html(ref_style=True, **kwargs) if ref_style else ''
 		# TODO: Author and creation time meta tags
-		return res
+		return '''<!DOCTYPE html><html>
+<head>
+<title>%s</title>
+<meta charset="UTF-8">%s
+</head>
+<body>
+%s
+%s
+</body>
+</html>
+''' % (
+			self.name,
+			css_string,
+			'\n'.join(block.emit_html(ref_style=ref_style, **kwargs) for block in self.children),
+			footer,
+		)
+
 
 	def emit_rtf(self, stylesheet, **kwargs):
 		with open(stylesheet) as f_style:
@@ -152,8 +163,12 @@ class Heading(Node):
 			ident += '_'
 		globalv.html_document_ids.add(ident)
 
-		return '<h%d id="%s">' % (self.level, ident)\
-		       + '<br>'.join(i.emit_html(**kwargs) for i in self.children) + "</h%d>" % self.level
+		return '<h%d id="%s">%s</h%d>' % (
+			self.level,
+			ident,
+			'<br>'.join(i.emit_html(**kwargs) for i in self.children),
+			self.level,
+		)
 
 	def emit_rtf(self, **kwargs):
 		# TODO: Distinguish between levels of headings
@@ -179,15 +194,18 @@ class Heading(Node):
 
 	def emit_jd(self, **kwargs):
 		# TODO: Emit the other style of heading canonically?
-		return '#' * self.level + ' ' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '\n\n'
+		return '%s %s\n\n' % (
+			'#' * self.level,
+			''.join(i.emit_jd(**kwargs) for i in self.children),
+		)
 
 
 class HorizontalRule(Node):
 	def emit_html(self, **kwargs):
-		return "<hr/>"
+		return '<hr/>'
 
 	def emit_latex(self, **kwargs):
-		return '\n' + r'\rule{\textwidth}{1pt}' + '\n'
+		return '\n%s\n' % r'\rule{\textwidth}{1pt}'
 
 	def emit_jd(self, **kwargs):
 		return '---\n\n'
@@ -199,18 +217,13 @@ class List(Node):
 
 class UList(List):
 	def emit_html(self, **kwargs):
-		res = "<ul>"
-		for item in self.children:
-			res += item.emit_html(**kwargs)
-		res += "</ul>"
-		return res
+		return '<ul>%s</ul>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		res = r'\begin{itemize}' + '\n'
-		for item in self.children:
-			res += item.emit_latex(**kwargs)
-		res += '\n' + r'\end{itemize}' + '\n'
-		return res
+		return r'''\begin{itemize}
+%s
+\end{itemize}
+''' % ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 	def emit_jd(self, depth=0, **kwargs):
 		list_res = []
@@ -229,18 +242,17 @@ class OList(List):
 		self.list_type = list_type
 
 	def emit_html(self, **kwargs):
-		res = '<ol start="%s" type="%s">' % (self.start, self.list_type)
-		for item in self.children:
-			res += item.emit_html(**kwargs)
-		res += "</ol>"
-		return res
+		return '<ol start="%s" type="%s">%s</ol>' % (
+			self.start,
+			self.list_type,
+			''.join(i.emit_html(**kwargs) for i in self.children),
+		)
 
 	def emit_latex(self, **kwargs):
-		res = r'\begin{enumerate}' + '\n'
-		for item in self.children:
-			res += item.emit_latex(**kwargs)
-		res += '\n' + r'\end{enumerate}' + '\n'
-		return res
+		return r'''\begin{enumerate}
+%s
+\end{enumerate}
+''' % (''.join(i.emit_latex(**kwargs) for i in self.children))
 
 	def emit_jd(self, depth=0, **kwargs):
 		list_res = []
@@ -255,11 +267,7 @@ class OList(List):
 
 class CheckList(UList):
 	def emit_html(self, **kwargs):
-		res = '<ul class="checklist">'
-		for item in self.children:
-			res += item.emit_html(**kwargs)
-		res += '</ul>'
-		return res
+		return '<ul class="checklist">%s</ul>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 
 class ReferenceList(OList):
@@ -268,17 +276,19 @@ class ReferenceList(OList):
 		super().__init__(items, '1')
 
 	def emit_html(self, **kwargs):
-		res = '<ol class="references" start="%s">' % self.start
-		for item in self.children:
-			res += item.emit_html(**kwargs)
-		res += '</ol>'
-		return res
+		return '<ol class="references" start="%s">%s</ol>' % (
+			self.start,
+			''.join(i.emit_html(**kwargs) for i in self.children),
+		)
 
 	def emit_latex(self, **kwargs):
-		res = r' \begin{thebibliography}{%s}' % len(globalv.references) + '\n'
-		res += '\n'.join(i.emit_latex(**kwargs) for i in self.children)
-		res += r' \end{thebibliography}'
-		return res
+		return r'''\begin{thebibliography}{%s}
+%s
+\end{thebibliography}
+''' % (
+			len(globalv.references),
+			'\n'.join(i.emit_latex(**kwargs) for i in self.children),
+		)
 
 
 class ListItem(Node):
@@ -293,7 +303,7 @@ class ListItem(Node):
 		return ''.join(res)
 
 	def emit_latex(self, **kwargs):
-		return r'\item ' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '\n'
+		return r'\item %s\n' % ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 
 class ChecklistItem(Node):
@@ -329,13 +339,13 @@ class ReferenceItem(Node):
 
 class Paragraph(Node):
 	def emit_html(self, **kwargs):
-		return "<p>" + "<br>".join(i.emit_html(**kwargs) for i in self.children) + "</p>"
+		return '<p>%s</p>' % '<br>'.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_rtf(self, **kwargs):
-		return r'{\pard\s1 ' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
+		return r'{\pard\s1 %s\par}' % r'\line '.join(i.emit_rtf(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return r'\par ' + r'\\ '.join(i.emit_latex(**kwargs) for i in self.children)
+		return r'\par %s' % r'\\ '.join(i.emit_latex(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
 		return ''.join(i.emit_jd(**kwargs) for i in self.children) + '\n'
@@ -343,7 +353,7 @@ class Paragraph(Node):
 
 class CodeBlock(Node):
 	def emit_html(self, **kwargs):
-		return "<code class=\"console\">" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</code>"
+		return '<code class="console">%s</code>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_rtf(self, **kwargs):
 		return r'''
@@ -352,15 +362,18 @@ class CodeBlock(Node):
 \brdrl\brdrs\brdrw10\brsp80
 \brdrb\brdrs\brdrw10\brsp20
 \brdrr\brdrs\brdrw10\brsp80
-''' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
+%s
+\par}
+''' % r'\line '.join(i.emit_rtf(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return r'\begin{lstlisting}' + '\n' + \
-		       ''.join(i.emit_latex(**kwargs) for i in self.children) + \
-		       r'\end{lstlisting}' + '\n'
+		return r'''\begin{lstlisting}
+%s
+\end{lstlisting}
+''' % ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
-		return '``\n' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '```\n'
+		return '```\n%s\n```' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class MathBlock(Node):
@@ -374,18 +387,23 @@ class MathBlock(Node):
 \brdrl\brdrs\brdrw10\brsp80
 \brdrb\brdrs\brdrw10\brsp20
 \brdrr\brdrs\brdrw10\brsp80
-''' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
+%s
+\par}
+''' % r'\line '.join(i.emit_rtf(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return r'\begin{gather*}' + '\n' + '\n'.join(i.emit_latex(**kwargs) for i in self.children) + '\n' + r'\end{gather*}'
+		return r'''\begin{gather*}
+%s
+\end{gather*}
+''' % '\n'.join(i.emit_latex(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
-		return '«««\n' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '»»»\n'
+		return '«««\n%s\n»»»' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class Blockquote(Node):
 	def emit_html(self, **kwargs):
-		return "<blockquote>" + "<br>".join(i.emit_html(**kwargs) for i in self.children) + "</blockquote>"
+		return '<blockquote>%s</blockquote>' % '<br>'.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_rtf(self, **kwargs):
 		return r'''
@@ -394,11 +412,15 @@ class Blockquote(Node):
 \brdrl\brdrs\brdrw10\brsp80
 \brdrb\brdrs\brdrw10\brsp20
 \brdrr\brdrs\brdrw10\brsp80
-''' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
+%s
+\par}
+''' % r'\line '.join(i.emit_rtf(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return r'\begin{displayquote}' + '\n' +\
-	r'\\'.join(i.emit_latex(**kwargs) for i in self.children) + r'\end{displayquote}' + '\n'
+		return r'''\begin{displayquote}
+%s
+\end{displayquote}
+''' % r'\\'.join(i.emit_latex(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
 		return ''.join('>' + i.emit_jd(**kwargs) for i in self.children) + '\n'
@@ -422,37 +444,48 @@ class Table(Node):
 		self.alignment = alignment
 
 	def emit_html(self, **kwargs):
-		caption_html = ''
-		if self.caption:
-			caption_html = '<caption>' + ''.join(i.emit_html(**kwargs) for i in self.caption) + '</caption>'
-		return '<table>' + caption_html + \
-			'<thead>' + self.children[0].emit_html(**kwargs) + '</thead>' +\
-		    '<tbody>' + ''.join(i.emit_html(**kwargs) for i in self.children[1:]) + '</tbody></table>'
+		caption_html = '<caption>%s</caption>' % ''.join(i.emit_html(**kwargs) for i in self.caption) if self.caption else ''
+		return '''<table>
+%s
+<thead>%s</thead>
+<tbody>%s</tbody>
+</table>
+''' % (
+			caption_html,
+			self.children[0].emit_html(**kwargs),
+			''.join(i.emit_html(**kwargs) for i in self.children[1:]),
+		)
 
 	def emit_latex(self, **kwargs):
-		caption_latex = ''
-		if self.caption:
-			caption_latex = r'\caption{' + ''.join(i.emit_latex(**kwargs) for i in self.caption) + '}'
+		caption_latex = r'\caption{%s}' % ''.join(i.emit_latex(**kwargs) for i in self.caption) if self.caption else ''
 		alignment_map = {
 			0: 'l',
 			1: 'c',
 			2: 'r',
 		}
-		alignment_string = '{' + '|'.join(alignment_map[i] for i in self.alignment) + '}'
-		res = r'\begin{table}' + '\n' + caption_latex + '\n'
-		res += r'\begin{tabular}' + alignment_string + '\n'
-		res += self.children[0].emit_latex(**kwargs) + r'\\ \hline '
-		res += ' \\\\\n'.join(i.emit_latex(**kwargs) for i in self.children[1:])
-		res += r'\end{tabular}' + '\n' + '\end{table}'
-		return res
+		alignment_string = '{%s}' % '|'.join(alignment_map[i] for i in self.alignment)
+
+		return r'''\begin{table}
+%s
+\begin{tabular}%s
+%s\\ \hline
+%s
+\end{tabular}
+\end{table}
+''' % (
+			caption_latex,
+			alignment_string,
+			self.children[0].emit_latex(**kwargs),
+			' \\\\\n'.join(i.emit_latex(**kwargs) for i in self.children[1:])
+		)
 
 	def emit_jd(self, **kwargs):
-		return '«' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '»'
+		return '«%s»' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class TableRow(Node):
 	def emit_html(self, **kwargs):
-		return "<tr>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</tr>"
+		return '<tr>%s</tr>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
 		return ' & '.join(i.emit_latex(**kwargs) for i in self.children)
@@ -460,7 +493,7 @@ class TableRow(Node):
 
 class TableHeader(Node):
 	def emit_html(self, **kwargs):
-		return "<th>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</th>"
+		return '<th>%s</th>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
 		return ''.join(i.emit_latex(**kwargs) for i in self.children)
@@ -478,8 +511,10 @@ class TableCell(Node):
 		self.align = align
 
 	def emit_html(self, **kwargs):
-		return '<td style="text-align: %s;">' % self.align_map[self.align] +\
-		       ''.join(i.emit_html(**kwargs) for i in self.children) + '</td>'
+		return '<td style="text-align: %s;">%s</td>' % (
+			self.align_map[self.align],
+			''.join(i.emit_html(**kwargs) for i in self.children),
+		)
 
 	def emit_latex(self, **kwargs):
 		return ''.join(i.emit_latex(**kwargs) for i in self.children)
@@ -497,12 +532,13 @@ class Link(Node):
 		if link_translation:
 			url = globalv.ext_translation(url, link_translation)
 
-		return '<a href="' + url + '">' + self.linked_text.emit_html(link_translation=link_translation, **kwargs) + '</a>'
+		return '<a href="%s">%s</a>' % (
+			url,
+			self.linked_text.emit_html(link_translation=link_translation, **kwargs),
+		)
 
 	def emit_rtf(self, link_translation=None, **kwargs):
-		url = self.url
-		if link_translation:
-			url = globalv.ext_translation(url, link_translation)
+		url = globalv.ext_translation(self.url, link_translation) if link_translation else self.url
 
 		linked_cited = self.linked_text.emit_html(
 			link_translation=link_translation,
@@ -608,19 +644,24 @@ class Content(Node):
 	def emit_html(self, **kwargs):
 		# TODO: Allow embedding of data to eliminate the need to link to it (maybe even downloading stuff from the web
 		dtype = globalv.content_filetypes(self.src)
+		attributes = {
+			'src': self.src,
+			'title': self.title.emit_html(**kwargs),
+			'alt': self.alt.emit_html(**kwargs),
+		}
 		if dtype == 'image':
-			elem = '<img src="%s" title="%s" alt="%s">' % (self.src, self.title.emit_html(**kwargs), self.alt.emit_html(**kwargs))
+			template = '<img src="%(src)s" title="%(title)s" alt="%(alt)s">'
 		elif dtype == 'audio':
-			elem = '<audio src="%s" controls>%s</audio>' % (self.src, self.alt.emit_html(**kwargs))
+			template = '<audio src="%(src)s" controls>%(alt)s</audio>'
 		elif dtype == 'video':
-			elem = '<video src="%s" controls>%s</video>' % (self.src, self.alt.emit_html(**kwargs))
+			template = '<video src="%(src)s" controls>%(alt)s</video>'
 		elif dtype == 'flash':
-			elem = '<object data="%s" type="application/x-shockwave-flash"></object>' % self.src
+			template = '<object data="%(src)s" type="application/x-shockwave-flash"></object>'
 		else:
-			elem = '<object data="%s"></object>' % self.src
+			template = '<object data="%(src)s"></object>'
 
 		# TODO: make figures a command line option
-		return '<figure>%s<figcaption>%s</figcaption></figure>' % (elem, self.title.emit_html(**kwargs))
+		return '<figure>%s<figcaption>%s</figcaption></figure>' % (template % attributes, self.title.emit_html(**kwargs))
 
 	def emit_latex(self, **kwargs):
 		dtype = globalv.content_filetypes(self.src)
@@ -646,7 +687,7 @@ class Content(Node):
 
 class ImplicitLink(TextNode):
 	def emit_html(self, **kwargs):
-		return '<a href="' + self.text + '" class="implicit">' + self.text + '</a>'
+		return '<a href="%s" class="implicit">%s</a>' % (self.text, self.text)
 
 	def emit_rtf(self, **kwargs):
 		return r'''{\field{\*\fldinst{HYPERLINK "%s"
@@ -660,7 +701,7 @@ class ImplicitLink(TextNode):
 
 class ImplicitEmail(TextNode):
 	def emit_html(self, **kwargs):
-		return '<a href="mailto:' + self.text + '" class="implicit">' + self.text + '</a>'
+		return '<a href="mailto:%s" class="implicit">%s</a>' % (self.text, self.text)
 
 	def emit_rtf(self, **kwargs):
 		return r'''{\field{\*\fldinst{HYPERLINK "mailto:%s"
@@ -680,108 +721,107 @@ class Plaintext(TextNode):
 # TODO: Shouldn't this be a text node?
 class CodeInline(Node):
 	def emit_html(self, **kwargs):
-		return "<code>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</code>"
+		return '<code>%s</code>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return r'\texttt{' + ''.join(i.emit_html(**kwargs) for i in self.children) + '}'
+		return r'\texttt{%s}' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
-		return '`' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '`'
+		return '`%s`' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class Emph(Node):
 	def emit_html(self, **kwargs):
-		return "<em>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</em>"
+		return '<em>%s</em>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_rtf(self, **kwargs):
-		return r'{\i ' + ''.join(i.emit_rtf(**kwargs) for i in self.children) + '}'
+		return r'{\i %s}' % ''.join(i.emit_rtf(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return r'\textit{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}'
+		return r'\textit{%s}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
-		return '*' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '*'
+		return '*%s*' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class Strong(Node):
 	def emit_html(self, **kwargs):
-		return "<strong>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</strong>"
+		return '<strong>%s</strong>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_rtf(self, **kwargs):
-		return r'{\b ' + ''.join(i.emit_rtf(**kwargs) for i in self.children) + '}'
+		return r'{\b %s}' % ''.join(i.emit_rtf(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return r'\textbf{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}'
+		return r'\textbf{%s}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
-		return '**' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '**'
+		return '**%s**' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class StrongEmph(Node):
 	def emit_html(self, **kwargs):
-		return "<strong><em>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</em></strong>"
+		return '<strong><em>%s</em></strong>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_rtf(self, **kwargs):
-		return r'{\b \i ' + ''.join(i.emit_rtf(**kwargs) for i in self.children) + '}'
+		return r'{\b \i %s}' % ''.join(i.emit_rtf(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return r'\textit{\textbf{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}}'
+		return r'\textit{\textbf{%s}}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
-		return '***' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '***'
+		return '***%s***' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class Strikethrough(Node):
 	def emit_html(self, **kwargs):
-		return "<del>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</del>"
+		return '<del>%s</del>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_rtf(self, **kwargs):
-		return r'{\strike ' + r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
+		return r'{\strike %s\par}' % r'\line '.join(i.emit_rtf(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
-		return '~~' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '~~'
+		return '~~%s~~' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 # MATH -------------------
 
 class MathInline(Node):
 	def emit_html(self, **kwargs):
-		return '<span class="math">' + ''.join(i.emit_html(**kwargs) for i in self.children) + '</span>'
+		return '<span class="math">%s</span>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
 		text = ''.join(i.emit_latex(**kwargs) for i in self.children)
 		for regex, subst in latex_math_subst:
 			text = text.replace(regex, subst)
-		return '$' + text + '$'
+		return '$%s$' % text
 
 	def emit_jd(self, **kwargs):
-		return '«' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '»'
+		return '«%s»' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class Parenthesis(Node):
 	def emit_html(self, **kwargs):
-		return "(" + ''.join(i.emit_html(**kwargs) for i in self.children) + ")"
+		return '(%s)' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_mathml(self, **kwargs):
-		return "<mfenced open=\"(\" close=\")\"><mrow>" + ''.join(i.emit_mathml(**kwargs) for i in self.children)\
-		       + "</mrow></mfenced>"
+		return '<mfenced open="(" close=")"><mrow>%s</mrow></mfenced>' % ''.join(i.emit_mathml(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return '(' + ''.join(i.emit_latex(**kwargs) for i in self.children) + ')'
+		return '(%s)' % ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
-		return '(' + ''.join(i.emit_jd(**kwargs) for i in self.children) + ')'
+		return '(%s)' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class Braces(Node):
 	def emit_html(self, **kwargs):
-		return "{ " + ''.join(i.emit_html(**kwargs) for i in self.children) + " }"
+		return '{}' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return r'\{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + r'\}'
+		return r'\{%s\}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
-		return '{' + ''.join(i.emit_jd(**kwargs) for i in self.children) + '}'
+		return '{%s}' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class Brackets(Node):
@@ -792,12 +832,13 @@ class Brackets(Node):
 		return ''.join(i.emit_mathml(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
-		return '[' + ''.join(i.emit_jd(**kwargs) for i in self.children) + ']'
+		return '[%s]' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class Sum(Node):
+	# TODO: emit_mathml
 	def emit_html(self, **kwargs):
-		return """
+		return '''
 	<math><mstyle displaystyle="true"><mrow>
 	<munderover>
 		<mo>&sum;</mo>
@@ -805,28 +846,32 @@ class Sum(Node):
 	</munderover>
 	<mrow></mrow>
 	</mrow></mstyle></math>
-	""" % (self.children[0].emit_mathml(**kwargs),
-		   self.children[1].emit_mathml(**kwargs)) + ''.join(i.emit_html(**kwargs) for i in self.children[2:])
+	%s
+	''' % (
+			self.children[0].emit_mathml(**kwargs),
+			self.children[1].emit_mathml(**kwargs),
+			''.join(i.emit_html(**kwargs) for i in self.children[2:]),
+		)
 
 	def emit_latex(self, **kwargs):
 		return r'\displaystyle\sum^{%s}_{%s} %s' % (
 			self.children[1].emit_latex(**kwargs),
 			self.children[0].emit_latex(**kwargs),
-			''.join(i.emit_latex(**kwargs) for i in self.children[2:])
+			''.join(i.emit_latex(**kwargs) for i in self.children[2:]),
 		)
 
 	def emit_jd(self, **kwargs):
 		return r'sum[%s %s %s]' % (
 			self.children[0].emit_jd(**kwargs),
 			self.children[1].emit_jd(**kwargs),
-			''.join(i.emit_jd(**kwargs) for i in self.children[2:])
+			''.join(i.emit_jd(**kwargs) for i in self.children[2:]),
 		)
 
 
 class Prod(Node):
+	#TODO: emit_mathml
 	def emit_html(self, **kwargs):
-		# return "∏"
-		return """
+		return '''
 	<math><mstyle displaystyle="true"><mrow>
 	<munderover>
 		<mo>&prod;</mo>
@@ -834,28 +879,32 @@ class Prod(Node):
 	</munderover>
 	<mrow></mrow>
 	</mrow></mstyle></math>
-	""" % (self.children[0].emit_mathml(**kwargs),
-		   self.children[1].emit_mathml(**kwargs)) + ''.join(i.emit_html(**kwargs) for i in self.children[2:])
+	%s
+	''' % (
+			self.children[0].emit_mathml(**kwargs),
+			self.children[1].emit_mathml(**kwargs),
+			''.join(i.emit_html(**kwargs) for i in self.children[2:]),
+		)
 
 	def emit_latex(self, **kwargs):
 		return r'\displaystyle\prod^{%s}_{%s} %s' % (
 			self.children[1].emit_latex(**kwargs),
 			self.children[0].emit_latex(**kwargs),
-			''.join(i.emit_latex(**kwargs) for i in self.children[2:])
+			''.join(i.emit_latex(**kwargs) for i in self.children[2:]),
 		)
 
 	def emit_jd(self, **kwargs):
 		return r'prod[%s %s %s]' % (
 			self.children[0].emit_jd(**kwargs),
 			self.children[1].emit_jd(**kwargs),
-			''.join(i.emit_jd(**kwargs) for i in self.children[2:])
+			''.join(i.emit_jd(**kwargs) for i in self.children[2:]),
 		)
 
 
 class Int(Node):
+	# TODO: emit_mathml
 	def emit_html(self, **kwargs):
-		# return "∏"
-		return """
+		return '''
 	<math><mstyle displaystyle="true"><mrow>
 	<munderover>
 		<mo>&int;</mo>
@@ -863,21 +912,25 @@ class Int(Node):
 	</munderover>
 	<mrow></mrow>
 	</mrow></mstyle></math>
-	""" % (self.children[0].emit_mathml(**kwargs),
-		   self.children[1].emit_mathml(**kwargs)) + ''.join(i.emit_html(**kwargs) for i in self.children[2:])
+	%s
+	''' % (
+			self.children[0].emit_mathml(**kwargs),
+			self.children[1].emit_mathml(**kwargs),
+			''.join(i.emit_html(**kwargs) for i in self.children[2:]),
+		)
 
 	def emit_latex(self, **kwargs):
 		return r'\displaystyle\sum^{%s}_{%s} %s' % (
 			self.children[1].emit_latex(**kwargs),
 			self.children[0].emit_latex(**kwargs),
-			''.join(i.emit_latex(**kwargs) for i in self.children[2:])
+			''.join(i.emit_latex(**kwargs) for i in self.children[2:]),
 		)
 
 	def emit_jd(self, **kwargs):
 		return r'int[%s %s %s]' % (
 			self.children[0].emit_jd(**kwargs),
 			self.children[1].emit_jd(**kwargs),
-			''.join(i.emit_jd(**kwargs) for i in self.children[2:])
+			''.join(i.emit_jd(**kwargs) for i in self.children[2:]),
 		)
 
 class Sqrt(Node):
@@ -898,74 +951,74 @@ class Sqrt(Node):
 
 class SuperscriptBrackets(Node):
 	def emit_html(self, **kwargs):
-		return "<sup>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</sup>"
+		return '<sup>%s</sup>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_mathml(self, **kwargs):
-		return "<msup><msrow></msrow><msrow>" + ''.join(i.emit_mathml(**kwargs) for i in self.children) + "</msrow></mssup>"
+		return '<msup><msrow></msrow><msrow>%s</msrow></mssup>' % ''.join(i.emit_mathml(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return '^{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}'
+		return '^{%s}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
-		return '^[' + ''.join(i.emit_jd(**kwargs) for i in self.children) + ']'
+		return '^[%s]' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class SubscriptBrackets(Node):
 	def emit_html(self, **kwargs):
-		return "<sub>" + ''.join(i.emit_html(**kwargs) for i in self.children) + "</sub>"
+		return '<sub>%s</sub>' % ''.join(i.emit_html(**kwargs) for i in self.children)
 
 	def emit_mathml(self, **kwargs):
-		return "<msub><msrow></msrow><msrow>" + ''.join(i.emit_mathml(**kwargs) for i in self.children) + "</msrow></mssub>"
+		return '<msub><msrow></msrow><msrow>%s</msrow></mssub>' % ''.join(i.emit_mathml(**kwargs) for i in self.children)
 
 	def emit_latex(self, **kwargs):
-		return '_{' + ''.join(i.emit_latex(**kwargs) for i in self.children) + '}'
+		return '_{%s}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs):
-		return '_[' + ''.join(i.emit_jd(**kwargs) for i in self.children) + ']'
+		return '_[%s]' % ''.join(i.emit_jd(**kwargs) for i in self.children)
 
 
 class Subscript(TextNode):
 	def emit_html(self, **kwargs):
-		return "<sub>" + html.escape(self.text, quote=True) + "</sub>"
+		return '<sub>%s</sub>' % html.escape(self.text, quote=True)
 
 	def emit_mathml(self, **kwargs):
-		return "<msub><mrow></mrow><mrow>" + html.escape(self.text, quote=True) + "</mrow></mssub>"
+		return '<msub><mrow></mrow><mrow>%s</mrow></mssub>' % html.escape(self.text, quote=True)
 
 	def emit_latex(self, **kwargs):
-		return '_{' + self.text + '}'
+		return '_{%s}' % self.text
 
 	def emit_jd(self, **kwargs):
-		return '_' + self.text
+		return '_%s' % self.text
 
 
 class Superscript(TextNode):
 	def emit_html(self, **kwargs):
-		return "<sup>" + html.escape(self.text, quote=True) + "</sup>"
+		return '<sup>%s</sup>' % html.escape(self.text, quote=True)
 
 	def emit_mathml(self, **kwargs):
-		return "<msup><mrow></mrow><mrow>" + html.escape(self.text, quote=True) + "</mrow></mssup>"
+		return '<msup><mrow></mrow><mrow>%s</mrow></mssup>' % html.escape(self.text, quote=True)
 
 	def emit_latex(self, **kwargs):
-		return '^{' + self.text + '}'
+		return '^{%s}' % self.text
 
 	def emit_jd(self, **kwargs):
-		return '^' + self.text
+		return '^%s' % self.text
 
 
 class Identifier(TextNode):
 	def emit_html(self, **kwargs):
-		return "<em>" + html.escape(self.text, quote=True) + "</em>"
+		return '<em>%s</em>' % html.escape(self.text, quote=True)
 
 	def emit_mathml(self, **kwargs):
-		return "<mi>" + self.text + "</mi>"
+		return '<mi>%s</mi>' % self.text
 
 
 class Operator(TextNode):
 	def emit_html(self, **kwargs):
-		return " %s " % html.escape(self.text, quote=True)
+		return ' %s ' % html.escape(self.text, quote=True)
 
 	def emit_mathml(self, **kwargs):
-		return "<mo>" + self.text + "</mo>"
+		return '<mo>%s</mo>' % self.text
 
 
 class Comment(TextNode):
@@ -973,20 +1026,20 @@ class Comment(TextNode):
 		return ' %s ' % html.escape(self.text, quote=True)
 
 	def emit_latex(self, **kwargs):
-		return r' \text{' + self.text + '} '
+		return r' \text{%s}' % self.text
 
 	def emit_jd(self, **kwargs):
-		return ' # ' + self.text + ' # '
+		return ' # %s # ' % self.text
 
 
 class Number(TextNode):
 	def emit_mathml(self, **kwargs):
-		return "<mn>" + self.text + "</mn>"
+		return '<mn>%s</mn>' % self.text
 
 
 class Newline(TextNode):
 	def emit_html(self, **kwargs):
-		return "<br>"
+		return '<br>'
 
 	def emit_latex(self, **kwargs):
 		return r'\\'
