@@ -38,11 +38,7 @@ def parse(file):
 			nodes.append(_parse_table(block))
 
 		elif block_is_blockquote(block):
-			subnodes = []
-			for line in block:
-				subnodes.append(Node(parse_text(_remove_gt(line))))
-			nodes.append(Blockquote(subnodes))
-
+			nodes.append(_parse_blockquote(block))
 		else:
 			# Default case, paragraphs
 			subnodes = []
@@ -221,12 +217,11 @@ def _parse_list(block):
 					list_stack.append(UList())
 				elif list_type == 'checklist':
 					list_stack.append(CheckList())
-		elif new_indent < indent_stack[-1]:
-			# Need to close nested lists
-			while new_indent < indent_stack[-1]:
-				indent_stack.pop()
-				closed_list = list_stack.pop()
-				list_stack[-1].children[-1].children.append(closed_list)
+		# Need to close nested lists?
+		while new_indent < indent_stack[-1]:
+			indent_stack.pop()
+			closed_list = list_stack.pop()
+			list_stack[-1].children[-1].children.append(closed_list)
 
 		# If checklist, set its state
 		if isinstance(list_stack[-1], CheckList):
@@ -274,6 +269,37 @@ def _parse_table(block):
 		table.children.append(TableRow(cells))
 
 	return table
+
+
+def _parse_blockquote(block):
+	blockquote_stack = []
+	indent_stack = [0]
+
+	for line in block:
+		m = re_blockquoteline.match(line)
+		if m.group(1):
+			new_indent = m.group(1).count('>')
+		else:
+			new_indent = 1
+
+		if new_indent > indent_stack[-1]:  # Create new nested Blockquotes
+			while new_indent > indent_stack[-1]:
+				indent_stack.append(indent_stack[-1] + 1)
+				blockquote_stack.append(Blockquote())
+
+		while new_indent < indent_stack[-1]:  # Close blockquotes on de-indent
+			indent_stack.pop()
+			closed_block = blockquote_stack.pop()
+			blockquote_stack[-1].children.append(closed_block)
+
+		blockquote_stack[-1].children.append(Node(parse_text(re_blockquoteline.sub('', line))))
+
+	while len(blockquote_stack) > 1:
+		indent_stack.pop()
+		closed_block = blockquote_stack.pop()
+		blockquote_stack[-1].children.append(closed_block)
+
+	return blockquote_stack[-1]
 
 
 def _remove_gt(line):
