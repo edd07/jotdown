@@ -13,6 +13,7 @@ re_heading_hashes = compile(r'(#+)([^#]*)#*', flags=re_flags)
 re_ulistitem = compile(r'^(\t*)[\*\-\+]\s+', flags=re_flags)
 re_olistitem = compile(r'^(\t*)(\w+)\.\s+', flags=re_flags)
 re_checklistitem = compile(r'^(\t*)-?\s*\[\s*([xX]?)\s*\]\s+', flags=re_flags)
+re_blockquoteline = compile(r'^((?:>\s?)*)', flags=re_flags)
 re_code_amb = compile(r'^```\s*$', flags=re_flags)
 re_code_open = compile(r'^```([\w\d+#][\w\d+#\s]*)$', flags=re_flags)
 re_math_open = compile(r'^«««\s*$', flags=re_flags)
@@ -57,6 +58,7 @@ math_tokens = [
 	(r'(sum\[)', "Sum_OPEN"),
 	(r'(prod\[)', "Prod_OPEN"),
 	(r'(int\[)', "Int_OPEN"),
+	(r'(sqrt\[)', "Sqrt_OPEN"),
 	(r'(\()', "Parenthesis_OPEN"),
 	(r'(\))', "Parenthesis_CLOSE"),
 	(r'({)', "Braces_OPEN"),
@@ -75,7 +77,7 @@ math_tokens = [
 	(r'(\n)', 'Newline')
 ]
 
-bracket_closable = ["SubscriptBrackets", "SuperscriptBrackets", "Sum", "Prod", "Int"]
+bracket_closable = ["SubscriptBrackets", "SuperscriptBrackets", "Sum", "Prod", "Int", "Sqrt"]
 
 # Tokens that disable text parsing : Until this is encountered, yield this token
 disabling_tokens = {

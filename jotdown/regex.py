@@ -108,7 +108,7 @@ math_subst = [
 
 # More operators
 (r'\.\.\.', '…'),
-(r'\+-', '±'),
+(r'\+/-', '±'),
 (r'-', '−'),
 
 # Quantification
@@ -213,7 +213,7 @@ latex_math_subst = [
 
 # # More operators
 # (r"\.\.\.", '…'),
-# (r"\+-", '±'),
+('±', '\pm '),
 ('−', '-'),
 
 # Quantification

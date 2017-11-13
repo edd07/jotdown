@@ -63,6 +63,7 @@ This is {surrounded by braces}, this is preceded by a \backslash
 
 >This is a
 >hard-wrapped blockquote with **format**
+>> A a nested blockquote
 >Newlines are also rendered
 
 >This is a lazy blockquote with only one '>' at the beginning of the block and
@@ -82,6 +83,7 @@ F(b) - F(a) = int[a b [f(x) dx]]
 omega^*
 Aĉ
 n_0.5
+x = (-b +/- sqrt[b^2 - 4ac])/2a
 »»»
 
 Tables
