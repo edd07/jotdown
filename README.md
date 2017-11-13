@@ -3,13 +3,13 @@ Jotdown
 
 Compiler for a Markdown-like syntax intended for note-taking. Jotdown is:
 
-* Pretty in plaintext
-* Easily and quickly typable while, say, taking a class
-* Version-controllable
+* Based on the [Markdown](http://daringfireball.net/projects/markdown/) format
+* Pretty and readable in plain-text
+* Version-controllable documents
 * Ünì©ôðé-friendly
-* Translatable to HTML, but theoretically to anything else
-* Capable of parsing some elements of math formulas for pretty output with human-readable syntax
-* A Python 3 program
+* A language for math formulas like: «e^[i pi] + 1 = 0»
+* Translatable to HTML, LATEX, RTF, and extensible for other formats
+* Open source
 
 Usage
 -----
