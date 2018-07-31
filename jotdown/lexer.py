@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import string
 from re import sub, compile, match, UNICODE
+from typing import Iterable, Iterator, Generator, Tuple, Match, Optional, Union
 
-from jotdown.roman import fromRoman, InvalidRomanNumeralError
+from jotdown.roman import from_roman, InvalidRomanNumeralError
 from jotdown.regex import *
 
-from jotdown.globalv import re_flags
+from jotdown.globalv import re_flags, Block
 
 # Init RE objects
 re_heading_underline = compile(r'(-+|=+)\s*\n', flags=re_flags)
@@ -89,7 +90,7 @@ text_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in text_tokens
 math_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in math_tokens]
 
 
-def get_blocks(file):
+def get_blocks(file: Union[Iterator, Iterable]) -> Iterator[Block]:
 	"""
 	Yields Blocks from an open file
 	"""
@@ -118,7 +119,7 @@ def get_blocks(file):
 		yield block
 
 
-def get_text_tokens(text):
+def get_text_tokens(text: str) -> Iterator[Tuple[str, Tuple[str, ...]]]:
 	"""
 	Yields tokens of the Text type from a string of plain text
 	"""
@@ -156,7 +157,7 @@ def get_text_tokens(text):
 				raise Exception("Unrecognized token at %s" % repr(text[:50]))
 
 
-def get_math_tokens(text):
+def get_math_tokens(text: str) -> Iterator[Tuple[str, str]]:
 	"""
 	Yields tokens of the Math type from a string of plain text
 	"""
@@ -176,14 +177,14 @@ def get_math_tokens(text):
 			raise Exception("Unrecognized math token at %s" % repr(text[:50]))
 
 
-def replace_math(text):
+def replace_math(text: str) -> str:
 	for k, v in math_subst:
 		text = sub(k, v, text)
 
 	return text
 
 
-def block_is_horizontal_rule(block):
+def block_is_horizontal_rule(block: Block) -> bool:
 	if len(block) > 1:
 		return False
 	line = block[0].replace(' ', '').replace('\t', '')
@@ -196,20 +197,20 @@ def block_is_horizontal_rule(block):
 	return False
 
 
-def block_is_heading(block):
+def block_is_heading(block: Block) -> bool:
 	if _block_is_underline_heading(block):
 		return True
 	return block[0][0] == '#' and len(block) == 1
 
 
-def _block_is_underline_heading(block):
+def _block_is_underline_heading(block: Block) -> bool:
 	last_line = block[-1].rstrip()
 	if all(map(lambda char: char == '-', last_line)):
 		return True
 	return all(map(lambda char: char == '=', last_line))
 
 
-def block_is_list(block):
+def block_is_list(block: Block) -> bool:
 	for line in block:
 		# Check if checklist
 		if re_checklistitem.match(line):
@@ -226,15 +227,15 @@ def block_is_list(block):
 	return True
 
 
-def block_is_code(block):
+def block_is_code(block: Block) -> bool:
 	return (match(re_code_open, block[0]) or match(re_code_amb, block[0])) and match(re_code_amb, block[-1])
 
 
-def block_is_math(block):
+def block_is_math(block: Block) -> bool:
 	return match(re_math_open, block[0]) and match(re_math_close, block[-1])
 
 
-def block_is_md_table(block):
+def block_is_md_table(block: Block) -> bool:
 	table_cols = len(block[0].split('|'))
 
 	if table_cols < 2 or len(block) < 3:
@@ -267,11 +268,11 @@ def block_is_md_table(block):
 	return True
 
 
-def block_is_blockquote(block):
+def block_is_blockquote(block: Block) -> bool:
 	return block[0][0] == '>'
 
 
-def list_item_text(item):
+def list_item_text(item: str) -> str:
 	"""
 	Return only the text for a list item without its Jotdown syntax
 	"""
@@ -284,7 +285,7 @@ def list_item_text(item):
 		return sub(re_ulistitem, '', item)
 
 
-def cell_align(cell):
+def cell_align(cell: str) -> int:
 	if cell.endswith('-'):
 		return 0  # Left
 	elif cell.startswith('-'):
@@ -293,7 +294,7 @@ def cell_align(cell):
 		return 1  # Center
 
 
-def lex_olist(m):
+def lex_olist(m: Match) -> Optional[Tuple[str, int]]:
 	"""Attempt to parse a numeral on the list item, be it decimal, roman or alphabetical"""
 	# TODO: support for non-latin alphabet numbering? HTML doesn't seem to support it
 	_, numeral = m.groups()
@@ -302,7 +303,7 @@ def lex_olist(m):
 		return '1', int(numeral)  # is it an integer?
 	except ValueError:
 		try:
-			value = fromRoman(numeral.upper())  # is it a roman numeral?
+			value = from_roman(numeral.upper())  # is it a roman numeral?
 			case = 'i' if numeral.lower() == numeral else 'I'
 			return case, value
 		except InvalidRomanNumeralError:
@@ -315,7 +316,7 @@ def lex_olist(m):
 			return case, value
 
 
-def lex_heading(block):
+def lex_heading(block: Block) -> Tuple[int, Block]:
 	"""
 	Return a tuple (level, text) from a Heading block
 	"""

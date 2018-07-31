@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from typing import Iterator, Iterable, Union
 
 from jotdown.lexer import *
 from jotdown.classes import *
@@ -7,7 +8,7 @@ import jotdown.globalv as globalv
 import sys
 
 
-def parse(file):
+def parse(file: Union[Iterator, Iterable]) -> Document:
 	"""
 	Returns a Document Node, the root of a syntax tree. Splits a file into Blocks and parses their contents individually
 	"""
@@ -52,7 +53,7 @@ def parse(file):
 	return Document(nodes)
 
 
-def parse_text(text):
+def parse_text(text: str) -> Sequence[Node]:
 	"""
 	Returns a Node, root to a syntax subtree, from plain text
 	"""
@@ -143,7 +144,7 @@ def parse_text(text):
 	return node_stack[0].children
 
 
-def parse_math(text):
+def parse_math(text: str) -> Math:
 	"""
 	Returns a Math Node from a plain text
 	"""
@@ -181,7 +182,7 @@ def parse_math(text):
 	return node_stack[0]
 
 
-def _parse_list(block):
+def _parse_list(block: Block) -> Sequence[Node]:
 	"""
 	Returns a List Node (ordered, unordered or checklist) from a block of text
 	"""
@@ -239,7 +240,7 @@ def _parse_list(block):
 	return list_stack[0]
 
 
-def _parse_table(block):
+def _parse_table(block: Block) -> Table:
 	"""
 	Returns a Table Node from a block of text
 	"""
@@ -271,7 +272,7 @@ def _parse_table(block):
 	return table
 
 
-def _parse_blockquote(block):
+def _parse_blockquote(block: Block) -> Blockquote:
 	blockquote_stack = []
 	indent_stack = [0]
 
@@ -302,7 +303,7 @@ def _parse_blockquote(block):
 	return blockquote_stack[-1]
 
 
-def _remove_gt(line):
+def _remove_gt(line: str) -> str:
 	"""
 	Remove the leading greater-than signs from lines belonging to a blockquote
 	"""
@@ -311,21 +312,3 @@ def _remove_gt(line):
 		return line[1:]
 	else:
 		return line
-
-
-if __name__ == "__main__":
-
-	if len(sys.argv) > 1:
-		fname = sys.argv[1]
-	else:
-		fname = "text.jd"
-
-	if len(sys.argv) > 2:
-		out = sys.argv[2]
-	else:
-		out = "out.html"
-
-	with open(fname, 'r') as f, open(out, 'wb') as fout:
-		doc = parse(f)
-		doc.name = fname
-		fout.write(doc.emit_html())

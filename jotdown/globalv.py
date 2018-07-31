@@ -2,14 +2,18 @@ import os
 from collections import OrderedDict
 import re
 import mimetypes
+import typing
 
 references = OrderedDict()  # References for citation mode
 html_document_ids = set()  # Set of strings that are ids to certain html elements
 
 re_flags = re.UNICODE
 
+# Custom types for clearer type hinting
+Block = typing.List[str]
 
-def content_filetypes(fname):
+
+def content_filetypes(fname: str) -> str:
 	guessed_type = mimetypes.guess_type(fname)
 	if guessed_type[0] is None:
 		return None
@@ -20,7 +24,7 @@ def content_filetypes(fname):
 		return 'flash'
 
 
-def ext_translation(url, fformat):
+def ext_translation(url: str, fformat: str) -> str:
 	if '#' in url:
 		url, anchor = url.split('#', 1)
 	else:
@@ -36,7 +40,7 @@ def ext_translation(url, fformat):
 		return url
 
 
-def rtf_escape_unicode(string):
+def rtf_escape_unicode(string: str) -> str:
 	res = []
 	for char in string:
 		cp = ord(char)
