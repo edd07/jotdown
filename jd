@@ -9,15 +9,16 @@ from jotdown.parser import parse
 
 import argparse
 import os
+import typing
 
 
-def write_file(infile, outfile, fformat='html', **kwargs):
-	with open(infile, 'r') as f, open(outfile, 'wb') as fout:
-		doc = parse(f)
+def write_file(infile: str, outfile: str, fformat: str='html', **kwargs) -> None:
+	with open(outfile, 'wb') as fout:
+		doc = parse(i + '\n' for i in globalv.read_guess_encoding(infile).split('\n'))
 		doc.name = os.path.splitext(os.path.split(infile)[1])[0]
 
 		fn = getattr(doc, 'emit_' + fformat)
-		fout.write(bytes(fn(**kwargs), 'utf-8'))
+		fout.write(bytes(fn(**kwargs), 'utf-8'))  # Output is hardcoded to utf-8
 
 own_directory = os.path.dirname(os.path.abspath(__file__))
 

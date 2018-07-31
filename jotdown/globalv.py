@@ -59,3 +59,48 @@ def rtf_escape_unicode(string: str) -> str:
 			raise Exception('Document contains characters with Unicode codepoints greater that 65536, not supported by RTF')
 	return ''.join(res)
 
+
+def read_guess_encoding(fname: str) -> str:
+	"""
+	Returns the context of a file of unknown encoding, hopefully.
+	"""
+	# TODO: Avoid having to read the whole file into memory
+	# If chardet is installed, use it
+	try:
+		from chardet import detect
+		with open(fname, 'rb') as f:
+			raw_data = f.read()
+			guessed_encoding = detect(raw_data)['encoding']
+			if __debug__: print('Reading %s with chardet, encoding is %s', (fname, guessed_encoding))
+			return str(raw_data, encoding=guessed_encoding)
+	except ImportError:
+		pass
+
+	try:
+		with open(fname, encoding='utf-8') as f:  # Is it a sane system?
+			if __debug__: print('Trying to read %s with utf-8' % fname)
+			return f.read()
+	except UnicodeDecodeError:
+		pass
+
+	try:
+		with open(fname, encoding='cp1252') as f:  # Is it Windows?
+			if __debug__: print('Trying to read %s with cp1252' % fname)
+			return f.read()
+	except UnicodeDecodeError:
+		pass
+
+	try:
+		with open(fname, encoding='mac_roman') as f:  # Is it Mac?
+			if __debug__: print('Trying to read %s with mac_roman' % fname)
+			return f.read()
+	except UnicodeDecodeError:
+		pass
+
+	try:
+		with open(fname) as f:  # Try detected or default encoding
+			if __debug__: print("Trying to read %s with your system's default encoding. Godspeed." % fname)
+			return f.read()
+	except UnicodeDecodeError:
+		raise Exception('Could not open %s, unknown encoding' % fname)
+

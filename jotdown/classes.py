@@ -4,7 +4,7 @@ import os
 import re
 from getpass import getuser
 from socket import gethostname
-from typing import Sequence
+from typing import Sequence, Iterable
 
 import jotdown.globalv as globalv
 from jotdown.regex import latex_math_subst
@@ -12,7 +12,7 @@ from jotdown.regex import latex_math_subst
 
 # Abstract ---------------------------------
 class Node:
-	def __init__(self, children: Sequence['Node']=None) -> None:
+	def __init__(self, children: Iterable['Node']=None) -> None:
 		self.children = children if children else []
 
 	def emit_html(self, **kwargs) -> str:
@@ -89,8 +89,7 @@ class Document(Node):
 
 	def emit_html(self, stylesheet: str, ref_style: bool=False, embed_css: bool=True, **kwargs) -> str:
 		if embed_css:
-			with open(stylesheet) as css:
-				css_string = '<style>%s</style>' % css.read()
+			css_string = '<style>%s</style>' % globalv.read_guess_encoding(stylesheet)
 		else:
 			css_string = '<link rel="stylesheet" href="%s"/>' % stylesheet
 
@@ -114,8 +113,7 @@ class Document(Node):
 		)
 
 	def emit_rtf(self, stylesheet: str, **kwargs) -> str:
-		with open(stylesheet) as f_style:
-			tables = f_style.read()
+		tables = globalv.read_guess_encoding(stylesheet)
 		# TODO: Author in info, and create time
 		return r'''{\rtf1\ansi\deff0\widowctrl %s
 {\info
@@ -142,8 +140,7 @@ class Document(Node):
 			'author': self.author,
 			'institution': self.hostname,
 		}
-		with open(stylesheet) as f_style:
-			return f_style.read() % field_dict
+		return globalv.read_guess_encoding(stylesheet) % field_dict
 
 
 class Heading(Node):

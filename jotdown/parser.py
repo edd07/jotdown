@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Iterator, Iterable, Union
+from typing import Iterator, Iterable, Union, TextIO
 
 from jotdown.lexer import *
 from jotdown.classes import *
@@ -8,7 +8,7 @@ import jotdown.globalv as globalv
 import sys
 
 
-def parse(file: Union[Iterator, Iterable]) -> Document:
+def parse(file: Union[Iterator, Iterable, TextIO]) -> Document:
 	"""
 	Returns a Document Node, the root of a syntax tree. Splits a file into Blocks and parses their contents individually
 	"""
