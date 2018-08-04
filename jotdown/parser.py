@@ -8,14 +8,14 @@ import jotdown.globalv as globalv
 import sys
 
 
-def parse(file: Union[Iterator, Iterable, TextIO]) -> Document:
+def parse(file: Union[Iterable, TextIO]) -> Document:
 	"""
 	Returns a Document Node, the root of a syntax tree. Splits a file into Blocks and parses their contents individually
 	"""
 
 	blocks = get_blocks(file)
 	nodes = []
-	for block in blocks:
+	for line_offset, block in blocks:
 		if block_is_horizontal_rule(block):
 			nodes.append(HorizontalRule())
 
@@ -23,11 +23,11 @@ def parse(file: Union[Iterator, Iterable, TextIO]) -> Document:
 			level, text = lex_heading(block)
 			subnodes = []
 			for line in text:
-				subnodes.append(Node(parse_text(line)))
+				subnodes.append(Node(parse_text(line_offset, line)))
 			nodes.append(Heading(level, subnodes))
 
 		elif block_is_list(block):
-			nodes.append(_parse_list(block))
+			nodes.append(_parse_list(line_offset, block))
 
 		elif block_is_code(block):
 			nodes.append(CodeBlock(map(Plaintext, block[1:-1])))
@@ -36,15 +36,15 @@ def parse(file: Union[Iterator, Iterable, TextIO]) -> Document:
 			nodes.append(MathBlock([parse_math(replace_math('\n'.join(block[1:-1])))]))
 
 		elif block_is_md_table(block):
-			nodes.append(_parse_table(block))
+			nodes.append(_parse_table(line_offset, block))
 
 		elif block_is_blockquote(block):
-			nodes.append(_parse_blockquote(block))
+			nodes.append(_parse_blockquote(line_offset, block))
 		else:
 			# Default case, paragraphs
 			subnodes = []
 			for line in block:
-				text_nodes = parse_text(line)
+				text_nodes = parse_text(line_offset, line)
 				if text_nodes:
 					subnodes.append(Node(text_nodes))
 			if subnodes:
@@ -53,7 +53,7 @@ def parse(file: Union[Iterator, Iterable, TextIO]) -> Document:
 	return Document(nodes)
 
 
-def parse_text(text: str) -> Sequence[Node]:
+def parse_text(line_number: int, text: str) -> Sequence[Node]:
 	"""
 	Returns a Node, root to a syntax subtree, from plain text
 	"""
@@ -64,17 +64,16 @@ def parse_text(text: str) -> Sequence[Node]:
 	node_stack = [Node()]
 	debug_text = text[:50]  # For error messages
 
-	for token, groups in get_text_tokens(text):
+	for token, groups in get_text_tokens(line_number, text):
 		if '_OPEN' in token or '_CLOSE' in token:
 			# General rule for NODE_OPEN or NODE_CLOSE tokens
-			node, type = token.split('_')
+			node, node_type = token.split('_')
 
-			if type == 'OPEN':
+			if node_type == 'OPEN':
 				stack.append(token)
 				node_class = globals()[node]
 				node_stack.append(node_class())
 			else:
-
 				tos_token = stack[-1]
 				if '_' in tos_token:
 					tos_node, tos_type = tos_token.split('_')
@@ -83,9 +82,13 @@ def parse_text(text: str) -> Sequence[Node]:
 						closed_node = node_stack.pop()
 						node_stack[-1].children.append(closed_node)
 					else:
-						raise Exception("Expected closing tag for %s, found %s" % (tos_token, token))
+						raise Exception("Expected closing tag for %s at line %d, found %s" % (
+							tos_token,
+							line_number,
+							token
+						))
 				else:
-					raise Exception("Malformed document at %s" % text)
+					raise Exception("Malformed document at line %d: %s" % (line_number, text))
 
 		elif '_AMB' in token:
 			# General rules for tags opened and closed by the same token
@@ -120,27 +123,27 @@ def parse_text(text: str) -> Sequence[Node]:
 
 		elif token == "Link":
 			text, href = groups
-			node_stack[-1].children.append(Link(Node(parse_text(text)), href))
+			node_stack[-1].children.append(Link(Node(parse_text(line_number, text)), href))
 
 		elif token == "ReferenceLink":
 			cited_text, ref_key = groups
-			node_stack[-1].children.append(ReferenceLink(Node(parse_text(cited_text)), ref_key))
+			node_stack[-1].children.append(ReferenceLink(Node(parse_text(line_number, cited_text)), ref_key))
 			globalv.references[ref_key] = None  # Save its place in the OrderedDict
 
 		elif token == "ReferenceDef":
 			ref_key, reference_text = groups
 
 			# TODO: Should parse on emit, or only when reference mode is enabled
-			globalv.references[ref_key] = Node(parse_text(reference_text)), reference_text
+			globalv.references[ref_key] = Node(parse_text(line_number, reference_text)), reference_text
 
 		elif token == "Image":
 			alt, src, title = groups
-			alt = Node(parse_text(alt))
-			title = Node(parse_text(title))
+			alt = Node(parse_text(line_number, alt))
+			title = Node(parse_text(line_number, title))
 			node_stack[-1].children.append(Content(alt, src, title))
 
 	if len(stack) > 1:
-		raise Exception("Missing closing tag for %s at %s" % (stack[-1], repr(debug_text)))
+		raise Exception("Missing closing tag for %s at line %d: %s" % (stack[-1], line_number, debug_text))
 	return node_stack[0].children
 
 
@@ -182,7 +185,7 @@ def parse_math(text: str) -> Math:
 	return node_stack[0]
 
 
-def _parse_list(block: Block) -> Sequence[Node]:
+def _parse_list(line_offset: int, block: Block) -> Sequence[Node]:
 	"""
 	Returns a List Node (ordered, unordered or checklist) from a block of text
 	"""
@@ -190,7 +193,7 @@ def _parse_list(block: Block) -> Sequence[Node]:
 	list_stack = []
 	indent_stack = [-1]
 
-	for line in block:
+	for line_number, line in enumerate(block, line_offset):
 		# Figure out the type of list
 		list_type = 'checklist'  # by default
 		m = re_checklistitem.match(line)
@@ -201,7 +204,7 @@ def _parse_list(block: Block) -> Sequence[Node]:
 				list_type = 'ordered'
 				m = re_olistitem.match(line)
 				if not m:
-					raise Exception('Malformed list item: ' + line)
+					raise Exception('Malformed list item at line %d: %s' % (line_number, line))
 
 		# Indent level of the current line
 		new_indent = len(m.group(1))
@@ -228,9 +231,9 @@ def _parse_list(block: Block) -> Sequence[Node]:
 		if isinstance(list_stack[-1], CheckList):
 			m = re_checklistitem.match(line)
 			checked = bool(m.group(2))
-			list_stack[-1].children.append(ChecklistItem(checked, parse_text(list_item_text(line))))
+			list_stack[-1].children.append(ChecklistItem(checked, parse_text(line_number, list_item_text(line))))
 		else:
-			list_stack[-1].children.append(ListItem(parse_text(list_item_text(line))))
+			list_stack[-1].children.append(ListItem(parse_text(line_number, list_item_text(line))))
 
 	# Finish closing remaining nested lists
 	while len(list_stack) > 1:
@@ -240,13 +243,13 @@ def _parse_list(block: Block) -> Sequence[Node]:
 	return list_stack[0]
 
 
-def _parse_table(block: Block) -> Table:
+def _parse_table(line_offset: int, block: Block) -> Table:
 	"""
 	Returns a Table Node from a block of text
 	"""
 
 	header_content = block[0].split('|')
-	header = [TableHeader(parse_text(i)) for i in header_content]
+	header = [TableHeader(parse_text(line_offset, i)) for i in header_content]
 
 	column_alignment = list(map(cell_align, block[1].split('|')))
 
@@ -258,7 +261,7 @@ def _parse_table(block: Block) -> Table:
 			if char not in '\t\n -':
 				break
 		else:
-			caption = parse_text(block[-1])
+			caption = parse_text(line_offset, block[-1])
 			md_table = block[2:-2]
 
 	table = Table(caption, column_alignment, [TableRow(header)])
@@ -266,17 +269,17 @@ def _parse_table(block: Block) -> Table:
 	for line in md_table:
 		cells = []
 		for content, cell_alignment in zip(line.split('|'), column_alignment):
-			cells.append(TableCell(cell_alignment, parse_text(content)))
+			cells.append(TableCell(cell_alignment, parse_text(line_offset, content)))
 		table.children.append(TableRow(cells))
 
 	return table
 
 
-def _parse_blockquote(block: Block) -> Blockquote:
+def _parse_blockquote(line_offset: int, block: Block) -> Blockquote:
 	blockquote_stack = []
 	indent_stack = [0]
 
-	for line in block:
+	for line_number, line in enumerate(block, line_offset):
 		m = re_blockquoteline.match(line)
 		if m.group(1):
 			new_indent = m.group(1).count('>')
@@ -293,7 +296,7 @@ def _parse_blockquote(block: Block) -> Blockquote:
 			closed_block = blockquote_stack.pop()
 			blockquote_stack[-1].children.append(closed_block)
 
-		blockquote_stack[-1].children.append(Node(parse_text(re_blockquoteline.sub('', line))))
+		blockquote_stack[-1].children.append(Node(parse_text(line_number, re_blockquoteline.sub('', line))))
 
 	while len(blockquote_stack) > 1:
 		indent_stack.pop()
@@ -307,7 +310,6 @@ def _remove_gt(line: str) -> str:
 	"""
 	Remove the leading greater-than signs from lines belonging to a blockquote
 	"""
-
 	if line[0] == '>':
 		return line[1:]
 	else:

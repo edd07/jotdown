@@ -90,13 +90,14 @@ text_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in text_tokens
 math_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in math_tokens]
 
 
-def get_blocks(file: Union[Iterator, Iterable]) -> Iterator[Block]:
+def get_blocks(file: Iterable) -> Iterator[Tuple[int, Block]]:
 	"""
 	Yields Blocks from an open file
 	"""
 	block = []
 	in_blankable_block = False
-	for line in file:
+	line_number = 0
+	for line_number, line in enumerate(file, 1):
 
 		if match(re_code_open, line):
 			in_blankable_block = True
@@ -110,19 +111,20 @@ def get_blocks(file: Union[Iterator, Iterable]) -> Iterator[Block]:
 
 		if not line.strip() and not in_blankable_block:
 			if block:
-				yield block
+				yield line_number - len(block), block
 			block = []
 		else:
 			block.append(line)
 
 	if block:
-		yield block
+		yield line_number - len(block), block
 
 
-def get_text_tokens(text: str) -> Iterator[Tuple[str, Tuple[str, ...]]]:
+def get_text_tokens(line_number: int, text: str) -> Iterator[Tuple[str, Tuple[str, ...]]]:
 	"""
 	Yields tokens of the Text type from a string of plain text
 	"""
+	# TODO: Return also the source text for the token for sane error messages
 	disabled = False
 	enabling_char = ''
 	disabled_token = ''
@@ -132,7 +134,11 @@ def get_text_tokens(text: str) -> Iterator[Tuple[str, Tuple[str, ...]]]:
 		if disabled:
 			m = match(r'([^%s]*)%s' % (enabling_char, enabling_char), text)
 			if not m:
-				raise Exception("Expected '%s' for unclosed tag in %s" % (enabling_char, repr(text[:50])))
+				raise Exception("Expected '%s' for unclosed tag at line %d: %s" % (
+					enabling_char,
+					line_number,
+					repr(text[:50])
+				))
 
 			yield disabled_token, m.groups()
 			yield closing_token, (enabling_char,)
@@ -154,7 +160,7 @@ def get_text_tokens(text: str) -> Iterator[Tuple[str, Tuple[str, ...]]]:
 					text = text[m_len:]
 					break
 			else:
-				raise Exception("Unrecognized token at %s" % repr(text[:50]))
+				raise Exception("Unrecognized token at line %d: %s" % (line_number, repr(text[:50])))
 
 
 def get_math_tokens(text: str) -> Iterator[Tuple[str, str]]:
