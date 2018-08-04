@@ -14,10 +14,10 @@ Block = typing.List[str]
 
 
 def content_filetypes(fname: str) -> str:
-	guessed_type = mimetypes.guess_type(fname)
-	if guessed_type[0] is None:
+	guessed_type = mimetypes.guess_type(fname)[0]
+	if guessed_type is None:
 		return None
-	mtype, msubtype = guessed_type[0].split('/')
+	mtype, msubtype = guessed_type.split('/')
 	if mtype in ('image', 'audio', 'video'):
 		return mtype
 	elif msubtype == 'x-shockwave-flash':
@@ -56,7 +56,7 @@ def rtf_escape_unicode(string: str) -> str:
 			# \uN? syntax, with N as a decimal, negative number
 			res.extend(r'\uc1\u%d?' % (cp - 65536))
 		else:
-			raise Exception('Document contains characters with Unicode codepoints greater that 65536, not supported by RTF')
+			raise UnicodeEncodeError('Document contains characters with Unicode codepoints greater that 65536, not supported by RTF')
 	return ''.join(res)
 
 
@@ -98,7 +98,7 @@ def read_guess_encoding(fname: str) -> str:
 		pass
 
 	try:
-		with open(fname) as f:  # Try detected or default encoding
+		with open(fname) as f:  # Try default encoding
 			if __debug__: print("Trying to read %s with your system's default encoding. Godspeed." % fname)
 			return f.read()
 	except UnicodeDecodeError:
