@@ -138,8 +138,8 @@ def parse_text(line_number: int, text: str) -> Sequence[Node]:
 
 		elif token == "Image":
 			alt, src, title = groups
-			alt = Node(parse_text(line_number, alt))
-			title = Node(parse_text(line_number, title))
+			alt = Node(parse_text(line_number, alt)) if alt else TextNode('')
+			title = Node(parse_text(line_number, title)) if title else TextNode('')
 			node_stack[-1].children.append(Content(alt, src, title))
 
 	if len(stack) > 1:

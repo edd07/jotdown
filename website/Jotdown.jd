@@ -1,0 +1,69 @@
+Jotdown is a plain-text format for writing
+==========================================
+
+Jotdown is:
+
+* Based on the [Markdown](http://daringfireball.net/projects/markdown/) format
+* Pretty and readable in plain-text
+* Version-controllable documents
+* Ünì©ôðé-friendly
+* A language for math formulas like: «e^[i pi] + 1 = 0»
+* Translatable to HTML, LATEX, and RTF
+* Open source
+
+Jotdown can be used for:
+
+* Websites (like this one!)
+* Note-taking
+* Documents in general
+* Scientific papers
+
+How to use Jotdown
+==================
+
+1. Make sure [Python 3 is installed](https://www.python.org/downloads/)
+2. Download from [Github](https://github.com/edd07/jotdown)
+3. Compile documents using the `jd` command
+
+The `jd` command
+----------------
+
+`jd` can take an individual `.jd` text file as an argument to compile it:
+
+```
+$ jd input_file.jd
+```
+
+Or, it can take a folder structure filled with `.jd` files. This will output the same folder structure with all of the files compiled.
+
+```
+$ jd input_folder/
+```
+
+This is useful for having a static website in source-code form and compiling it with a single command. After that, it's ready for uploading. See [Compiling folders](folders.jd).
+
+### Command-line Options
+
+* `-o <filename>` or `--output <filename>`: Sets the filename for the compiled file (or folder). The default is simply `out`.
+* `-f <extension>` or `--format <extension>`: Sets the output format, such as `html`, `rtf` or `latex`. HTML output is the default. See [Formats](formats.jd).
+* '-s <name>' or '--style <name>':  Uses the specified stylesheet to format the output document. Can be either the name of an included style, or a custom file. The format of the stylesheet will depend on the output format used. See [Styles](styles.jd).
+* `-c` or `--citations`: Reference-style links will be rendered as citations, for example for scientific papers. See [Citations](citations.jd).
+* `-a` or `--author`: Specify an author for the compiled document. Defaults to the system's current user name.
+
+Examples
+========
+
+This is the source code for this very document:
+
+![](Jotdown.jd)
+
+
+Jotdown vs. other formats
+=========================
+
+Format	| Math formulas | HTML Output | RDF Output | LATEX Output | Super Ugly Source Code
+--------|:-------------:|:-----------:|:----------:|:------------:|:----------------------:
+Jotdown |      ✓           |      ✓        |      ✓       |      ✓         |
+Markdown|               |      ✓        |            |              |
+LATEX	|      ✓           |             |            |     Duh      |        ✓
+

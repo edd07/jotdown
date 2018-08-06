@@ -1,0 +1,202 @@
+/*
+Stylesheet for web and print
+Based on the Solarized color scheme by Ethan Schoonover
+http://ethanschoonover.com/solarized
+*/
+
+
+body {
+	font-family: helvetica, arial, sans-serif;
+	font-size: 12pt;
+	padding: 0 32px 32px 32px;
+	color: #657b83; /* base00 */
+}
+
+@media screen {
+	body {
+		margin: 0 auto 0 auto;
+		background-color: #fdf6e3; /* base3 */
+	}
+}
+
+h1 {
+	font-weight: bold;
+	font-size: xx-large;
+	color: #b58900; /* yellow */
+}
+
+h1:first-of-type {
+	border: 0;
+	font-weight: bold;
+	font-size: xx-large;
+	color: #ffffff;
+	display: block;
+	width: 100%;
+	background-image: url(banner.jpg);
+	background-attachment: fixed;
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: cover;
+	min-height: 180px;
+	margin: 0 -32px 0 -32px;
+	padding: 32px;
+	line-height: 180px;
+	text-shadow: 1px 1px 3px black;
+	text-align: center;
+}
+
+h2 *, h2 {
+	color: #cb4b16 !important; /* orange */
+	font-weight: normal;
+	font-family: helvetica, arial, sans-serif;
+	font-style: normal;
+	font-size: x-large;
+}
+
+@media screen {
+	hr {
+		color: #eee8d5; /* base2 */
+		background-color: #eee8d5; /* base2 */
+		height: 16px;
+		width: 932px;
+		margin: 0 -16px 0 -16px;
+		border: 0;
+	}
+}
+
+@media print {
+	hr {
+		height: 0;
+		border: 0;
+		page-break-after: always;
+	}
+}
+
+a {
+	color: #268bd2;
+}
+
+div.math {
+	padding: 16px;
+	text-align: center;
+	border: #859900 solid 1px;
+	margin: 16px 40px 16px 40px;
+}
+
+@media screen {
+	div.math {
+		background-color: #eee8d5; /* base2 */
+	}
+}
+
+.math, code {
+	color: #586e75; /* base01 */
+}
+
+.math {
+	font-family: georgia, times, serif;
+}
+
+.console {
+	display: block;
+	padding: 16px;
+	border-radius: 0;
+}
+
+@media screen {
+	.console {
+		margin: 0 -16px 0 -16px;
+		background-color: #002b36; /* base03 */
+		color: #839496; /* base0 */
+	}
+}
+
+@media print {
+	.console {
+		margin: 16px 40px 16px 40px;
+		color: #002b36; /* base03 */
+		border: #002b36 solid 1px; /* base3 */
+	}
+}
+
+code {
+	font-family: inconsolata, courier, monospace;
+	display: inline;
+	-moz-tab-size: 4;
+	-o-tab-size: 4;
+	tab-size: 4;
+	font-size: 12pt;
+	padding: 0;
+	margin: 0;
+	white-space: pre;
+}
+
+ul {
+	list-style: square;
+}
+
+li {
+	color: #d33682; /* magenta */
+}
+
+li span {
+	color: #657b83; /* base00 */
+}
+
+.references li {
+
+}
+
+blockquote {
+	color: #586e75; /* base01 */
+	padding: 16px;
+	border: #2aa198 solid 1px; /* cyan */
+}
+
+@media screen {
+	blockquote {
+		background-color: #eee8d5; /* base2 */
+	}
+}
+
+figure {
+	margin: auto;
+	text-align: center;
+}
+
+img, audio, video, object {
+	display: block;
+	margin: auto;
+	width: 100%;
+}
+
+table {
+	margin: auto;
+}
+
+table, td, th {
+	border-collapse: collapse;
+	border: 1px solid #6c71c4; /* violet */
+}
+
+td, th {
+	padding: 5px;
+}
+
+caption {
+	caption-side: bottom;
+	text-align: center;
+}
+
+@media screen {
+	th, th * {
+		background-color: #6c71c4; /* violet */
+		color: #fdf6e3 !important; /* base3 */
+	}
+}
+
+@media print {
+	th, th * {
+		color: #6c71c4 !important; /* violet */
+	}
+}
