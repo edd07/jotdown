@@ -14,7 +14,7 @@ import typing
 
 def write_file(infile: str, outfile: str, fformat: str='html', **kwargs) -> None:
 	with open(outfile, 'wb') as fout:
-		doc = parse(i + '\n' for i in globalv.read_guess_encoding(infile).split('\n'))
+		doc = parse(i + '\n' for i in globalv.read_with_encoding(infile).split('\n'))
 		doc.name = os.path.splitext(os.path.split(infile)[1])[0]
 
 		fn = getattr(doc, 'emit_' + fformat)
@@ -43,14 +43,22 @@ style_ext = {
 builtin_stylesheet = os.path.join(own_directory, 'styles', args.style + style_ext[args.format])
 if os.path.isfile(builtin_stylesheet):
 	stylesheet = builtin_stylesheet
+	stylesheet_enc = 'utf-8'
 else:
 	stylesheet = args.style
+	stylesheet_enc = None
 
 # Parse standalone files
 if os.path.isfile(args.input):
 	fout_name = args.output + '.' + args.format
 
-	write_file(args.input, fout_name, fformat=args.format, ref_style=args.citations, stylesheet=stylesheet)
+	write_file(
+		args.input, fout_name,
+		fformat=args.format,
+		ref_style=args.citations,
+		stylesheet=stylesheet,
+		stylesheet_enc=stylesheet_enc
+	)
 
 # Parse whole directories
 elif os.path.isdir(args.input):
@@ -85,7 +93,9 @@ elif os.path.isdir(args.input):
 					out_fname,
 					fformat=args.format,
 					ref_style=args.citations,
-					stylesheet=os.path.relpath(stylesheet, out_dirpath), embed_css=False,
+					stylesheet=os.path.relpath(stylesheet, out_dirpath),
+					stylesheet_enc=stylesheet_enc,
+					embed_css=False,
 					link_translation=args.format,
 					author=args.author,
 				)
@@ -125,6 +135,7 @@ elif os.path.isdir(args.input):
 				fn = getattr(index_doc, 'emit_' + args.format)
 				fout.write(bytes(fn(
 					stylesheet=os.path.relpath(stylesheet, out_dirpath),
+					stylesheet_enc=stylesheet_enc,
 					embed_css=False,
 					link_translation=args.format,
 					author=args.author,

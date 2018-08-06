@@ -87,9 +87,9 @@ class Document(Node):
 		self.author = getuser() if not author else author
 		self.hostname = gethostname()
 
-	def emit_html(self, stylesheet: str, ref_style: bool=False, embed_css: bool=True, **kwargs) -> str:
+	def emit_html(self, stylesheet: str, stylesheet_enc: str=None, ref_style: bool=False, embed_css: bool=True, **kwargs) -> str:
 		if embed_css:
-			css_string = '<style>%s</style>' % globalv.read_guess_encoding(stylesheet)
+			css_string = '<style>%s</style>' % globalv.read_with_encoding(stylesheet, stylesheet_enc)
 		else:
 			css_string = '<link rel="stylesheet" href="%s"/>' % stylesheet
 
@@ -112,8 +112,8 @@ class Document(Node):
 			footer,
 		)
 
-	def emit_rtf(self, stylesheet: str, **kwargs) -> str:
-		tables = globalv.read_guess_encoding(stylesheet)
+	def emit_rtf(self, stylesheet: str, stylesheet_enc: str=None, **kwargs) -> str:
+		tables = globalv.read_with_encoding(stylesheet, stylesheet_enc)
 		# TODO: Author in info, and create time
 		return r'''{\rtf1\ansi\deff0\widowctrl %s
 {\info
@@ -123,7 +123,7 @@ class Document(Node):
 }
 ''' % (tables, self.name) + ''.join(block.emit_rtf(**kwargs) for block in self.children) + '}'
 
-	def emit_latex(self, stylesheet: str, ref_style: bool=False, **kwargs) -> str:
+	def emit_latex(self, stylesheet: str, stylesheet_enc: str=None, ref_style: bool=False, **kwargs) -> str:
 		packages = r'''
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
@@ -140,7 +140,7 @@ class Document(Node):
 			'author': self.author,
 			'institution': self.hostname,
 		}
-		return globalv.read_guess_encoding(stylesheet) % field_dict
+		return globalv.read_with_encoding(stylesheet, stylesheet_enc) % field_dict
 
 
 class Heading(Node):

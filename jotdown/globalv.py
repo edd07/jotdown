@@ -60,22 +60,30 @@ def rtf_escape_unicode(string: str) -> str:
 	return ''.join(res)
 
 
-def read_guess_encoding(fname: str) -> str:
+def read_with_encoding(fname: str, encoding=None) -> str:
 	"""
 	Returns the context of a file of unknown encoding, hopefully.
 	"""
 	# TODO: Avoid having to read the whole file into memory
+
+	# Explicit encoding
+	if encoding:
+		with open(fname, encoding=encoding) as f:
+			if __debug__: print('Reading %s with %s' % (fname, encoding))
+			return f.read()
+
 	# If chardet is installed, use it
 	try:
 		from chardet import detect
 		with open(fname, 'rb') as f:
 			raw_data = f.read()
 			guessed_encoding = detect(raw_data)['encoding']
-			if __debug__: print('Reading %s with chardet, encoding is %s', (fname, guessed_encoding))
+			if __debug__: print('Reading %s with chardet, encoding is %s' % (fname, guessed_encoding))
 			return str(raw_data, encoding=guessed_encoding)
 	except ImportError:
 		pass
 
+	# Guess
 	try:
 		with open(fname, encoding='utf-8') as f:  # Is it a sane system?
 			if __debug__: print('Trying to read %s with utf-8' % fname)
