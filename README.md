@@ -26,17 +26,20 @@ To export a whole directory structure of jotdown files, just pass a directory to
 
 The `directory` structure will be replicated under `output_directory`, and all `.jd` files will be translated to the specified output format. Links to other `.jd` files are automatically converted to the correct file extension. The stylesheet file will be copied to `output_directory` and all output documents will link to it instead of embedding its text. Other files found in side `directory` will be copied over verbatim. This mode allows, for example, to have a source tree for a website including Jotdown source documents, custom HTML, images, etc. that will be exported with a single command, to a single directory that is ready to be deployed.
 
+### Other options
+
+    $ jd <input> [-o <output>] [-f <format>] [-s <stylesheet>] [-r | --md-refs]
+
+* `-r` or `--md-refs`: Treat citation-style links in a manner compatible with Markdown. Jotdown's own behaviour (allowing markup inside citations, not only links) is default.
+* `-a` or `--author`: Specify an author for the compiled document. Defaults to the system's current user name.
 A note on encodings
 -------------------
 
-The provided sample document (`text.jd`) is encoded as UTF-8, and so it will work unmodified only on systems where UTF-8
-is default, as Python will use the system's default encoding for reading files. Jotdown could be hard-coded to read files
-as UTF-8, but I chose not to because a user's `.jd` files will presumably be in their system's encoding of choice.
+The provided sample document (`text.jd`) is encoded as UTF-8, and so it will work unmodified only on systems where UTF-8 is default, as Python will use the system's default encoding for reading files. Jotdown could be hard-coded to read files as UTF-8, but I chose not to because a user's `.jd` files will presumably be in their system's encoding of choice.
+
 Because of this, reading your own `.jd` files you edited as plaintext should work with no issues on any system.
 
-HTML output, however, *is* hard-coded to be UTF-8. Jotdown's output files are not intended to be modified by hand, so it
-should not be a problem. A `<meta charset="UTF-8">` tag is included in every generated HTML file, so any reasonable
-browser will be able to handle it, special characters and all.
+Output, however, *is* hard-coded, most likely to UTF-8 (depending on the format). Jotdown's output files are not intended to be modified by hand, so their encoding should not be a problem. A `<meta charset="UTF-8">` tag is included in every generated HTML file, so any reasonable browser will be able to handle it, special characters and all.
 
 Output formats
 --------------
@@ -46,13 +49,9 @@ Jotdown is designed to support output in many different formats. At the time, HT
 Output style
 ------------
 
-Jotdown includes CSS files that will be embedded in every HTML document to style them. The default stylesheet, `solarized.css` is based on the
-[Solarized](http://ethanschoonover.com/solarized) color scheme for maximum readability. A stylesheet is also included to mimic the look of IEEE publications (`ieee.css`), to test and demontstrate Jotdown's readiness for use as a source language in scientific manuscripts.
+Jotdown includes CSS files that will be embedded in every HTML document to style them. The default stylesheet, `solarized.css` is based on the [Solarized](http://ethanschoonover.com/solarized) color scheme for maximum readability. A stylesheet is also included to mimic the look of IEEE publications (`ieee.css`), to test and demontstrate Jotdown's readiness for use as a source language in scientific manuscripts.
 
 Browser compatibility
 ---------------------
 
-Some math-related features (namely capital-sigma notation for sums, capital-pi notation for products, and integrals) do
-not have a clean way to be marked up as HTML. For this reason, they are output as MathML inside `<math>` tags. MathML is
-supported by Firefox, Opera and Safari, but not by Chrome. Chrome users, be warned. All other expressions are kept as
-pure HTML for maximum compatibility.
+Some math-related features (namely capital-sigma notation for sums, capital-pi notation for products, and integrals) do not have a clean way to be marked up as HTML. For this reason, they are output as MathML inside `<math>` tags. MathML is supported by Firefox, Opera and Safari, but not by Chrome. Chrome users, be warned. All other expressions are kept as pure HTML for maximum compatibility.
