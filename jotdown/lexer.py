@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import string
-from re import sub, compile, match, UNICODE
+from re import sub, compile, match
 from typing import Iterable, Iterator, Generator, Tuple, Match, Optional, Union
 
 from jotdown.roman import from_roman, InvalidRomanNumeralError
@@ -67,7 +67,7 @@ math_tokens = [
 	(r'(\[)', "Brackets_OPEN"),  # Brackets are for grouping that won't show up in output
 	(r'(\])', "Brackets_CLOSE"),
 
-	(r'#\s*([^#\n]*)(?:#|\n|$)', 'Comment'),
+	(r'#\s*([^#\n]*)(?:#|(?=\n)|$)', 'Comment'),
 	(r'_([%(num)s]+|[^%(not_id)s]+)' % math_exp, 'Subscript'),
 	(r'\^([%(num)s]+|[^%(not_id)s]+|\*|∁|)' % math_exp, 'Superscript'),
 	(r'([+−]?[%(num)s][%(num)s\.]*)' % math_exp, 'Number'),
@@ -163,10 +163,11 @@ def get_text_tokens(line_number: int, text: str) -> Iterator[Tuple[str, Tuple[st
 				raise Exception("Unrecognized token at line %d: %s" % (line_number, repr(text[:50])))
 
 
-def get_math_tokens(text: str) -> Iterator[Tuple[str, str]]:
+def get_math_tokens(line_offset: int, text: str) -> Iterator[Tuple[str, str]]:
 	"""
 	Yields tokens of the Math type from a string of plain text
 	"""
+	line_number = line_offset
 	while text:
 		for exp, val in math_tokens:
 			m = match(exp, text)
@@ -174,13 +175,16 @@ def get_math_tokens(text: str) -> Iterator[Tuple[str, str]]:
 			if m:
 				m_len = len(m.group(0))
 
+				if val == 'Newline':
+					line_number += 1
+
 				if val != 'Whitespace':
-					yield val, m.group(1)
+					yield line_number, val, m.group(1)
 
 				text = text[m_len:]
 				break
 		else:
-			raise Exception("Unrecognized math token at %s" % repr(text[:50]))
+			raise Exception("Unrecognized math token at line %d: %s" % (line_number, repr(text[:50])))
 
 
 def replace_math(text: str) -> str:

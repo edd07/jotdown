@@ -33,7 +33,7 @@ def parse(file: Union[Iterable, TextIO]) -> Document:
 			nodes.append(CodeBlock(map(Plaintext, block[1:-1])))
 
 		elif block_is_math(block):
-			nodes.append(MathBlock([parse_math(replace_math('\n'.join(block[1:-1])))]))
+			nodes.append(MathBlock([parse_math(line_offset + 1, replace_math(''.join(block[1:-1])))]))
 
 		elif block_is_md_table(block):
 			nodes.append(_parse_table(line_offset, block))
@@ -62,7 +62,7 @@ def parse_text(line_number: int, text: str) -> Sequence[Node]:
 	# Keep track of the nested nodes and their type
 	stack = ['Dummy_OPEN']
 	node_stack = [Node()]
-	debug_text = text[:50]  # For error messages
+	debug_text = text[:50] if len(text) <= 50 else text[:47] + '...'  # For error messages
 
 	for token, groups in get_text_tokens(line_number, text):
 		if '_OPEN' in token or '_CLOSE' in token:
@@ -113,7 +113,7 @@ def parse_text(line_number: int, text: str) -> Sequence[Node]:
 				node_stack[-1].children.append(Plaintext(groups[0]))
 
 		elif token == "Math":
-			node_stack[-1].children.append(parse_math(replace_math(groups[0])))
+			node_stack[-1].children.append(parse_math(line_number, replace_math(groups[0])))
 
 		elif token == "ImplicitLink":
 			node_stack[-1].children.append(ImplicitLink(groups[0]))
@@ -147,7 +147,7 @@ def parse_text(line_number: int, text: str) -> Sequence[Node]:
 	return node_stack[0].children
 
 
-def parse_math(text: str) -> Math:
+def parse_math(line_offset: int, text: str) -> Math:
 	"""
 	Returns a Math Node from a plain text
 	"""
@@ -155,9 +155,10 @@ def parse_math(text: str) -> Math:
 	# Keep track of the nested nodes and their types
 	stack = ['Math_OPEN']
 	node_stack = [Math()]
-	debug_text = text[:50]  # For error messages
+	debug_text = text[:50] if len(text) <= 50 else text[:47] + '...'  # For error messages
+	line_number = line_offset
 
-	for token, text in get_math_tokens(text):
+	for line_number, token, text in get_math_tokens(line_offset, text):
 		if '_OPEN' in token:
 			node_class = globals()[token.split('_')[0]]
 			stack.append(token)
@@ -173,15 +174,15 @@ def parse_math(text: str) -> Math:
 					closed_node = node_stack.pop()
 					node_stack[-1].children.append(closed_node)
 				else:
-					raise Exception("Expected closing math tag for %s, found %s" % (tos_token, token))
+					raise Exception("Expected closing math tag for %s at line %d, found %s" % (tos_token, line_number, token))
 			else:
-				raise Exception("Malformed document at %s" % text)
+				raise Exception("Malformed document at line %d: %s" % (line_number, text))
 		else:  # text tokens
-			node_class = globals()[token]
+			node_class = globals()[token]  # TODO: Read from the module, not the globals
 			node_stack[-1].children.append(node_class(text))
 
 	if len(stack) > 1:
-		raise Exception("Missing closing math tag for %s at: %s" % (stack[-1], repr(debug_text)))
+		raise Exception("Missing closing math tag for %s at line %d: %s" % (stack[-1], line_number, repr(debug_text)))
 	return node_stack[0]
 
 
