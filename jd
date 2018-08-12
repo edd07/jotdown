@@ -65,7 +65,7 @@ elif os.path.isdir(args.input):
 	if not os.path.exists(args.output):
 		os.makedirs(args.output)
 	if not os.path.isdir(args.output):
-		raise Exception(args.output + ' exists but is not a directory')
+		raise Exception(f'{args.output} exists but is not a directory')
 	if os.path.realpath(args.output).startswith(os.path.realpath(args.input) + os.path.sep):
 		print(os.path.realpath(args.output))
 		print(os.path.realpath(args.input))
@@ -141,6 +141,6 @@ elif os.path.isdir(args.input):
 					author=args.author,
 				), 'utf-8'))
 else:
-	raise Exception(args.input + ' does not exist')
+	raise Exception(f'{args.input} does not exist')
 
 

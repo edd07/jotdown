@@ -132,13 +132,9 @@ def get_text_tokens(line_number: int, text: str) -> Iterator[Tuple[str, Tuple[st
 	while text:
 
 		if disabled:
-			m = match(r'([^%s]*)%s' % (enabling_char, enabling_char), text)
+			m = match(rf'([^{enabling_char}]*){enabling_char}', text)
 			if not m:
-				raise Exception("Expected '%s' for unclosed tag at line %d: %s" % (
-					enabling_char,
-					line_number,
-					repr(text[:50])
-				))
+				raise Exception(f'Expected "{enabling_char}" for unclosed tag at line {line_number}: {repr(text[:50])}')
 
 			yield disabled_token, m.groups()
 			yield closing_token, (enabling_char,)
@@ -160,7 +156,7 @@ def get_text_tokens(line_number: int, text: str) -> Iterator[Tuple[str, Tuple[st
 					text = text[m_len:]
 					break
 			else:
-				raise Exception("Unrecognized token at line %d: %s" % (line_number, repr(text[:50])))
+				raise Exception(f'Unrecognized token at line {line_number}: {repr(text[:50])}')
 
 
 def get_math_tokens(line_offset: int, text: str) -> Iterator[Tuple[str, str]]:
@@ -184,7 +180,7 @@ def get_math_tokens(line_offset: int, text: str) -> Iterator[Tuple[str, str]]:
 				text = text[m_len:]
 				break
 		else:
-			raise Exception("Unrecognized math token at line %d: %s" % (line_number, repr(text[:50])))
+			raise Exception('Unrecognized math token at line {line_number}: {repr(text[:50])}')
 
 
 def replace_math(text: str) -> str:
@@ -210,17 +206,16 @@ def block_is_horizontal_rule(block: Block) -> bool:
 def block_is_heading(block: Block) -> bool:
 	if _block_is_underline_heading(block):
 		return True
-	return block[0][0] == '#' and len(block) == 1
+	return block[0].startswith('#') and len(block) == 1
 
 
 def _block_is_underline_heading(block: Block) -> bool:
 	last_line = block[-1].rstrip()
-	if all(map(lambda char: char == '-', last_line)):
-		return True
-	return all(map(lambda char: char == '=', last_line))
+	return all(char == '=' for char in last_line) or all(char == '-' for char in last_line)
 
 
 def block_is_list(block: Block) -> bool:
+	# TODO: Warn if block is almost list?
 	for line in block:
 		# Check if checklist
 		if re_checklistitem.match(line):
@@ -238,21 +233,22 @@ def block_is_list(block: Block) -> bool:
 
 
 def block_is_code(block: Block) -> bool:
-	return (match(re_code_open, block[0]) or match(re_code_amb, block[0])) and match(re_code_amb, block[-1])
+	return bool(match(re_code_open, block[0]) or match(re_code_amb, block[0]) and match(re_code_amb, block[-1]))
 
 
 def block_is_math(block: Block) -> bool:
-	return match(re_math_open, block[0]) and match(re_math_close, block[-1])
+	return bool(match(re_math_open, block[0]) and match(re_math_close, block[-1]))
 
 
 def block_is_md_table(block: Block) -> bool:
+	# TODO: Warn if almost table
 	table_cols = len(block[0].split('|'))
 
-	if table_cols < 2 or len(block) < 3:
+	if table_cols < 2 or len(block) < 3:  # Header + separator + at least one row
 		return False
 
 	md_table = block
-	if len(block) >= 5:
+	if len(block) >= 5:  # Header + separator + at least one row + separator + caption
 		# Does it have a caption?
 		for char in block[-2]:
 			if char not in '- \t\n':
@@ -295,17 +291,11 @@ def list_item_text(item: str) -> str:
 		return sub(re_ulistitem, '', item)
 
 
-def cell_align(cell: str) -> int:
-	if cell.endswith('-'):
-		return 0  # Left
-	elif cell.startswith('-'):
-		return 2  # Right
-	else:
-		return 1  # Center
-
-
 def lex_olist(m: Match) -> Optional[Tuple[str, int]]:
-	"""Attempt to parse a numeral on the list item, be it decimal, roman or alphabetical"""
+	"""
+	Attempt to parse a numeral on the list item, be it decimal, roman or alphabetical
+	returns list_type, number
+	"""
 	# TODO: support for non-latin alphabet numbering? HTML doesn't seem to support it
 	_, numeral = m.groups()
 
@@ -337,4 +327,4 @@ def lex_heading(block: Block) -> Tuple[int, Block]:
 	else:
 		m = re_heading_hashes.match(block[0])
 		hashes, text = m.groups()
-		return min(len(hashes), 6), (text.strip(),)
+		return min(len(hashes), 6), [text.strip()]

@@ -116,10 +116,10 @@ def parse_text(line_number: int, text: str) -> Sequence[Node]:
 			node_stack[-1].children.append(parse_math(line_number, replace_math(groups[0])))
 
 		elif token == "ImplicitLink":
-			node_stack[-1].children.append(ImplicitLink(groups[0]))
+			node_stack[-1].children.append(ImplicitLink(TextNode(groups[0]), groups[0]))
 
 		elif token == "ImplicitEmail":
-			node_stack[-1].children.append(ImplicitEmail(groups[0]))
+			node_stack[-1].children.append(ImplicitLink(TextNode(groups[0]), f'mailto: {groups[0]}'))
 
 		elif token == "Link":
 			text, href = groups
@@ -186,9 +186,9 @@ def parse_math(line_offset: int, text: str) -> Math:
 	return node_stack[0]
 
 
-def _parse_list(line_offset: int, block: Block) -> Sequence[Node]:
+def _parse_list(line_offset: int, block: Block) -> ListNode:
 	"""
-	Returns a List Node (ordered, unordered or checklist) from a block of text
+	Returns a ListNode (ordered, unordered or checklist) from a block of text
 	"""
 	# Keep track of nested lists and their indent levels
 	list_stack = []
@@ -252,7 +252,7 @@ def _parse_table(line_offset: int, block: Block) -> Table:
 	header_content = block[0].split('|')
 	header = [TableHeader(parse_text(line_offset, i)) for i in header_content]
 
-	column_alignment = list(map(cell_align, block[1].split('|')))
+	column_alignment = list(map(_cell_align, block[1].split('|')))
 
 	# Check if there is a caption
 	md_table = block[2:]
@@ -262,15 +262,15 @@ def _parse_table(line_offset: int, block: Block) -> Table:
 			if char not in '\t\n -':
 				break
 		else:
-			caption = parse_text(line_offset, block[-1])
+			caption = parse_text(line_offset + len(block) - 1, block[-1])
 			md_table = block[2:-2]
 
 	table = Table(caption, column_alignment, [TableRow(header)])
 
-	for line in md_table:
+	for line_number, line in enumerate(md_table, line_offset + 2):
 		cells = []
 		for content, cell_alignment in zip(line.split('|'), column_alignment):
-			cells.append(TableCell(cell_alignment, parse_text(line_offset, content)))
+			cells.append(TableCell(cell_alignment, parse_text(line_number, content)))
 		table.children.append(TableRow(cells))
 
 	return table
@@ -315,3 +315,13 @@ def _remove_gt(line: str) -> str:
 		return line[1:]
 	else:
 		return line
+
+
+def _cell_align(cell: str) -> int:
+	if cell.endswith('-'):
+		return 0  # Left
+	elif cell.startswith('-'):
+		return 2  # Right
+	else:
+		return 1  # Center
+

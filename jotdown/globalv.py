@@ -13,7 +13,7 @@ re_flags = re.UNICODE
 Block = typing.List[str]
 
 
-def content_filetypes(fname: str) -> str:
+def content_filetypes(fname: str) -> typing.Optional[str]:
 	guessed_type = mimetypes.guess_type(fname)[0]
 	if guessed_type is None:
 		return None
@@ -69,7 +69,7 @@ def read_with_encoding(fname: str, encoding=None) -> str:
 	# Explicit encoding
 	if encoding:
 		with open(fname, encoding=encoding) as f:
-			if __debug__: print('Reading %s with %s' % (fname, encoding))
+			if __debug__: print(f'Reading {fname} with {encoding}')
 			return f.read()
 
 	# If chardet is installed, use it
@@ -78,7 +78,7 @@ def read_with_encoding(fname: str, encoding=None) -> str:
 		with open(fname, 'rb') as f:
 			raw_data = f.read()
 			guessed_encoding = detect(raw_data)['encoding']
-			if __debug__: print('Reading %s with chardet, encoding is %s' % (fname, guessed_encoding))
+			if __debug__: print(f'Reading {fname} with chardet, encoding is {guessed_encoding}')
 			return str(raw_data, encoding=guessed_encoding)
 	except ImportError:
 		pass
@@ -86,29 +86,29 @@ def read_with_encoding(fname: str, encoding=None) -> str:
 	# Guess
 	try:
 		with open(fname, encoding='utf-8') as f:  # Is it a sane system?
-			if __debug__: print('Trying to read %s with utf-8' % fname)
+			if __debug__: print(f'Trying to read {fname} with utf-8')
 			return f.read()
 	except UnicodeDecodeError:
 		pass
 
 	try:
 		with open(fname, encoding='cp1252') as f:  # Is it Windows?
-			if __debug__: print('Trying to read %s with cp1252' % fname)
+			if __debug__: print(f'Trying to read {fname} with cp1252')
 			return f.read()
 	except UnicodeDecodeError:
 		pass
 
 	try:
 		with open(fname, encoding='mac_roman') as f:  # Is it Mac?
-			if __debug__: print('Trying to read %s with mac_roman' % fname)
+			if __debug__: print(f'Trying to read {fname} with mac_roman')
 			return f.read()
 	except UnicodeDecodeError:
 		pass
 
 	try:
 		with open(fname) as f:  # Try default encoding
-			if __debug__: print("Trying to read %s with your system's default encoding. Godspeed." % fname)
+			if __debug__: print(f'Trying to read {fname} with your system\'s default encoding. Godspeed.')
 			return f.read()
 	except UnicodeDecodeError:
-		raise Exception('Could not open %s, unknown encoding' % fname)
+		raise Exception(f'Could not open {fname}, unknown encoding')
 

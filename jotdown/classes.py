@@ -15,6 +15,9 @@ class Node:
 	def __init__(self, children: Iterable['Node']=None) -> None:
 		self.children = children if children else []
 
+	def join_children(self, string: str, fmt: str, **kwargs) -> str:
+		return string.join(getattr(i, f'emit_{fmt}')(**kwargs) for i in self.children)
+
 	def emit_html(self, **kwargs) -> str:
 		return ''.join(i.emit_html(**kwargs) for i in self.children)
 
@@ -70,7 +73,7 @@ class TextNode(Node):
 		if len(self.text) > len(summary):
 			summary += '...'
 		res = ('\t' * indent) + type(self).__name__ + ' ' + summary + '\n'
-		res += ''.join(i.emit_debug(indent + 1, **kwargs) for i in self.children)
+		res += self.join_children('', 'debug', indent=indent + 1)
 		return res
 
 	def emit_jd(self, **kwargs) -> str:
@@ -89,39 +92,35 @@ class Document(Node):
 
 	def emit_html(self, stylesheet: str, stylesheet_enc: str=None, ref_style: bool=False, embed_css: bool=True, **kwargs) -> str:
 		if embed_css:
-			css_string = '<style>%s</style>' % globalv.read_with_encoding(stylesheet, stylesheet_enc)
+			css_string = f'<style>{globalv.read_with_encoding(stylesheet, stylesheet_enc)}</style>'
 		else:
-			css_string = '<link rel="stylesheet" href="%s"/>' % stylesheet
+			css_string = f'<link rel="stylesheet" href="{stylesheet}"/>'
 
-		footer = '<footer>%s</footer>' % ReferenceList().emit_html(ref_style=True, **kwargs) if ref_style else ''
+		body = self.join_children('\n', 'html', ref_style=ref_style)
 		# TODO: Author and creation time meta tags
-		return '''<!DOCTYPE html><html>
+		return f'''<!DOCTYPE html><html>
 <head>
-<title>%s</title>
-<meta charset="UTF-8">%s
+<title>{self.name}</title>
+<meta charset="UTF-8">{css_string}
 </head>
 <body>
-%s
-%s
+{body}
+<footer>{ReferenceList().emit_html(ref_style=True, **kwargs) if ref_style else ""}</footer>
 </body>
 </html>
-''' % (
-			self.name,
-			css_string,
-			'\n'.join(block.emit_html(ref_style=ref_style, **kwargs) for block in self.children),
-			footer,
-		)
+'''
 
 	def emit_rtf(self, stylesheet: str, stylesheet_enc: str=None, **kwargs) -> str:
-		tables = globalv.read_with_encoding(stylesheet, stylesheet_enc)
 		# TODO: Author in info, and create time
-		return r'''{\rtf1\ansi\deff0\widowctrl %s
-{\info
-{\title %s}
-{\author PLACEHOLDER}
-{\creatim\yr2016\mo7\dy20\hr18\min37}
-}
-''' % (tables, self.name) + ''.join(block.emit_rtf(**kwargs) for block in self.children) + '}'
+		return rf'''{{\rtf1\ansi\deff0\widowctrl {globalv.read_with_encoding(stylesheet, stylesheet_enc)}
+{{\info
+{{\title {self.name}}}
+{{\author PLACEHOLDER}}
+{{\creatim\yr2016\mo7\dy20\hr18\min37}}
+}}
+{self.join_children("", "rtf", **kwargs)}
+}}
+'''
 
 	def emit_latex(self, stylesheet: str, stylesheet_enc: str=None, ref_style: bool=False, **kwargs) -> str:
 		packages = r'''
@@ -135,7 +134,7 @@ class Document(Node):
 		field_dict = {
 			'packages': packages,
 			'title': self.name,
-			'body': ''.join(block.emit_latex(ref_style=ref_style, **kwargs) for block in self.children),
+			'body': self.join_children('', 'latex', ref_style=ref_style, **kwargs),
 			'references': ReferenceList().emit_latex(ref_style=True, **kwargs) if ref_style else '',
 			'author': self.author,
 			'institution': self.hostname,
@@ -150,7 +149,7 @@ class Heading(Node):
 
 	def emit_html(self, **kwargs) -> str:
 		# Sanitize the text for the id
-		ident = ''.join(i.emit_html(**kwargs) for i in self.children).strip()
+		ident = self.join_children('', 'html', **kwargs).strip()
 		ident = re.sub(r'<[^>]*>', '', ident, flags=globalv.re_flags)
 		ident = re.sub(r'\s', '-', ident, flags=globalv.re_flags)
 		ident = html.escape(ident)
@@ -160,12 +159,7 @@ class Heading(Node):
 			ident += '_'
 		globalv.html_document_ids.add(ident)
 
-		return '<h%d id="%s">%s</h%d>' % (
-			self.level,
-			ident,
-			'<br>'.join(i.emit_html(**kwargs) for i in self.children),
-			self.level,
-		)
+		return f'<h{self.level} id="{ident}">{self.join_children("<br>", "html", **kwargs)}</h{self.level}>'
 
 	def emit_rtf(self, **kwargs) -> str:
 		# TODO: Distinguish between levels of headings
@@ -178,8 +172,8 @@ class Heading(Node):
 			5: 4,
 			6: 4
 		}
-		return (r'{\pard\sa180\sb90\keepn\s%d ' % styles[self.level]) + \
-		       r'\line '.join(i.emit_rtf(**kwargs) for i in self.children) + r'\par}'
+		body = self.join_children(r'\line', 'rtf', **kwargs)
+		return rf'{{\pard\sa180\sb90\keepn\s{styles[self.level]} {body}\par}}'
 
 	def emit_latex(self, **kwargs) -> str:
 		levels = {
@@ -187,14 +181,12 @@ class Heading(Node):
 			2: r'\subsection{',
 			3: r'\subsubsection{',
 		}
-		return levels.get(self.level, r'\subsubsection{') + r'\\'.join(i.emit_latex(**kwargs) for i in self.children) + '}\n'
+		body = r'\\'.join(i.emit_latex(**kwargs) for i in self.children)
+		return levels.get(self.level, rf'\subsubsection{{{body}}}\n')
 
 	def emit_jd(self, **kwargs) -> str:
 		# TODO: Emit the other style of heading canonically?
-		return '%s %s\n\n' % (
-			'#' * self.level,
-			''.join(i.emit_jd(**kwargs) for i in self.children),
-		)
+		return f'{"#" * self.level} {self.join_children("", "jd", **kwargs)}\n\n'
 
 
 class HorizontalRule(Node):
@@ -202,7 +194,7 @@ class HorizontalRule(Node):
 		return '<hr/>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return '\n%s\n' % r'\rule{\textwidth}{1pt}'
+		return '\n' r'\rule{\textwidth}{1pt}' '\n'
 
 	def emit_jd(self, **kwargs) -> str:
 		return '---\n\n'
@@ -214,13 +206,13 @@ class ListNode(Node):
 
 class UList(ListNode):
 	def emit_html(self, **kwargs) -> str:
-		return '<ul>%s</ul>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<ul>{"".join(i.emit_html(**kwargs) for i in self.children)}</ul>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'''\begin{itemize}
-%s
-\end{itemize}
-''' % ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return rf'''\begin{{itemize}}
+{self.join_children("", "latex", **kwargs)}
+\end{{itemize}}
+'''
 
 	def emit_jd(self, depth: int=0, **kwargs) -> str:
 		list_res = []
@@ -228,7 +220,7 @@ class UList(ListNode):
 			list_item_res = []
 			for node in list_item.children:
 					list_item_res.append(node.emit_jd(depth=depth + 1, **kwargs))
-			list_res.append('\t' * depth + '* ' +''.join(list_item_res))
+			list_res.append('\t' * depth + f'* {"".join(list_item_res)}')
 		return '\n'.join(list_res) + ('\n' if depth == 0 else '')
 
 
@@ -239,17 +231,13 @@ class OList(ListNode):
 		self.list_type = list_type
 
 	def emit_html(self, **kwargs) -> str:
-		return '<ol start="%s" type="%s">%s</ol>' % (
-			self.start,
-			self.list_type,
-			''.join(i.emit_html(**kwargs) for i in self.children),
-		)
+		return f'<ol start="{self.start}" type="{self.list_type}">\
+		{self.join_children("", "html", **kwargs)}</ol>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'''\begin{enumerate}
-%s
-\end{enumerate}
-''' % (''.join(i.emit_latex(**kwargs) for i in self.children))
+		return rf'''\begin{{enumerate}}
+{self.join_children("", "latex", **kwargs)}
+\end{{enumerate}}'''
 
 	def emit_jd(self, depth: int=0, **kwargs) -> str:
 		list_res = []
@@ -258,13 +246,13 @@ class OList(ListNode):
 			for node in list_item.children:
 				list_item_res.append(node.emit_jd(depth=depth + 1, **kwargs))
 			# TODO: Support the other list types
-			list_res.append('\t' * depth + str(n + 1) + ' ' +''.join(list_item_res))
+			list_res.append('\t' * depth + str(n + 1) + f' {"".join(list_item_res)}')
 		return '\n'.join(list_res) + ('\n' if depth == 0 else '')
 
 
 class CheckList(UList):
 	def emit_html(self, **kwargs) -> str:
-		return '<ul class="checklist">%s</ul>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<ul class="checklist">{self.join_children("", "html", **kwargs)}</ul>'
 
 
 class ReferenceList(OList):
@@ -273,34 +261,29 @@ class ReferenceList(OList):
 		super().__init__(items, '1')
 
 	def emit_html(self, **kwargs) -> str:
-		return '<ol class="references" start="%s">%s</ol>' % (
-			self.start,
-			''.join(i.emit_html(**kwargs) for i in self.children),
-		)
+		return f'<ol class="references" start="{self.start}">{self.join_children("", "html", **kwargs)}</ol>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'''\begin{thebibliography}{%s}
-%s
-\end{thebibliography}
-''' % (
-			len(globalv.references),
-			'\n'.join(i.emit_latex(**kwargs) for i in self.children),
-		)
+		body = "\n".join(i.emit_latex(**kwargs) for i in self.children)
+		return rf'''\begin{{thebibliography}}{{{len(globalv.references)}}}
+{body}
+\end{{thebibliography}}
+'''
 
 
 class ListItem(Node):
 	def emit_html(self, **kwargs) -> str:
-		res = ["<li><span>", ''.join(i.emit_html(**kwargs) for i in self.children[:-1])]
+		res = [f'<li><span>{"".join(i.emit_html(**kwargs) for i in self.children[:-1])}']
 
 		if self.children and isinstance(self.children[-1], ListNode):
-			res.append("</span>" + self.children[-1].emit_html(**kwargs))
+			res.append(f'</span>{self.children[-1].emit_html(**kwargs)}')
 		elif self.children:
-			res.append(self.children[-1].emit_html(**kwargs) + "</span>")
+			res.append(f'{self.children[-1].emit_html(**kwargs)}</span>')
 
 		return ''.join(res)
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'\item %s\n' % ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return rf'\item {self.join_children("", "latex", **kwargs)}\n'
 
 
 class ChecklistItem(Node):
@@ -310,12 +293,12 @@ class ChecklistItem(Node):
 
 	def emit_html(self, **kwargs) -> str:
 		css_class = 'checked' if self.checked else 'unchecked'
-		res = ['<li class="%s"><span>' % css_class, ''.join(i.emit_html(**kwargs) for i in self.children[:-1])]
+		res = [f'<li class="{css_class}"><span>{"".join(i.emit_html(**kwargs) for i in self.children[:-1])}']
 
 		if self.children and isinstance(self.children[-1], ListNode):
-			res.append("</span>" + self.children[-1].emit_html(**kwargs))
+			res.append(f'</span>{self.children[-1].emit_html(**kwargs)}')
 		elif self.children:
-			res.append(self.children[-1].emit_html(**kwargs) + "</span>")
+			res.append(f'{self.children[-1].emit_html(**kwargs)}</span>')
 
 		return ''.join(res)
 
@@ -327,96 +310,101 @@ class ReferenceItem(Node):
 		super().__init__()
 
 	def emit_html(self, **kwargs) -> str:
-		return '<li><a id="%s"><span>%s</span></a></li>' % (self.ref_key, self.content.emit_html(**kwargs))
+		return f'<li><a id="self.ref_key"><span>{self.content.emit_html(**kwargs)}</span></a></li>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'\bibitem{%s} %s ' % (self.ref_key, self.content.emit_latex(**kwargs))
+		return rf'\bibitem{{{self.ref_key}}} {self.content.emit_latex(**kwargs)} '
 
 
 class Paragraph(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<p>%s</p>' % '<br>'.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<p>{self.join_children("<br>", "html", **kwargs)}</p>'
 
 	def emit_rtf(self, **kwargs) -> str:
-		return r'{\pard\s1 %s\par}' % r'\line '.join(i.emit_rtf(**kwargs) for i in self.children)
+		return r'{\pard\s1 %s\par}' % self.join_children(r'\line', 'rtf', **kwargs)
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'\par %s' % r'\\ '.join(i.emit_latex(**kwargs) for i in self.children)
+		return r'\par %s' % self.join_children(r'\\ ', 'latex', **kwargs)
 
 	def emit_jd(self, **kwargs) -> str:
-		return ''.join(i.emit_jd(**kwargs) for i in self.children) + '\n'
+		return f'{self.join_children("", "jd", **kwargs)} \n'
 
 
 class CodeBlock(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<code class="console">%s</code>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<code class="console">{self.join_children("", "html", **kwargs)}</code>'
 
 	def emit_rtf(self, **kwargs) -> str:
-		return r'''
-{\pard\sa180\li720\ri720\keep\f2
+		body = self.join_children(r'\line ', 'rtf', **kwargs)
+		return rf'''
+{{\pard\sa180\li720\ri720\keep\f2
 \brdrt\brdrs\brdrw10\brsp20
 \brdrl\brdrs\brdrw10\brsp80
 \brdrb\brdrs\brdrw10\brsp20
 \brdrr\brdrs\brdrw10\brsp80
-%s
-\par}
-''' % r'\line '.join(i.emit_rtf(**kwargs) for i in self.children)
+{body}
+\par}}
+'''
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'''\begin{lstlisting}
-%s
-\end{lstlisting}
-''' % ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return rf'''\begin{{lstlisting}}
+{self.join_children("", "latex", **kwargs)}
+\end{{lstlisting}}
+'''
 
 	def emit_jd(self, **kwargs) -> str:
-		return '```\n%s\n```' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'```\n{self.join_children("", "jd", **kwargs)}\n```'
 
 
 class MathBlock(Node):
 	def emit_html(self, **kwargs) -> str:
-		return "<div class='math'>" + "<br>".join(i.emit_html(**kwargs) for i in self.children) + "</div>"
+		return f'<div class="math">{self.join_children("<br>", "html", **kwargs)}</div>'
 
 	def emit_rtf(self, **kwargs) -> str:
-		return r'''
-{\pard\sa180\li720\ri720\keep
+		body = self.join_children(r'line ', 'rtf', **kwargs)
+		return rf'''
+{{\pard\sa180\li720\ri720\keep
 \brdrt\brdrs\brdrw10\brsp20
 \brdrl\brdrs\brdrw10\brsp80
 \brdrb\brdrs\brdrw10\brsp20
 \brdrr\brdrs\brdrw10\brsp80
-%s
-\par}
-''' % r'\line '.join(i.emit_rtf(**kwargs) for i in self.children)
+{body}
+\par}}
+'''
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'''\begin{gather*}
-%s
-\end{gather*}
-''' % '\n'.join(i.emit_latex(**kwargs) for i in self.children)
+		body = self.join_children('\n', 'latex', **kwargs)
+		return rf'''\begin{{gather*}}
+{body}
+\end{{gather*}}
+'''
 
 	def emit_jd(self, **kwargs) -> str:
-		return '«««\n%s\n»»»' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'«««\n{self.join_children("", "jd", **kwargs)}\n»»»'
 
 
 class Blockquote(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<blockquote>%s</blockquote>' % '<br>'.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<blockquote>{self.join_children("<br>", "html", **kwargs)}</blockquote>'
 
 	def emit_rtf(self, **kwargs) -> str:
-		return r'''
-{\pard\sa180\li720\ri720\keep\f1
+		body = self.join_children(r'\line ', 'rtf', **kwargs)
+		return rf'''
+{{\pard\sa180\li720\ri720\keep\f1
 \brdrt\brdrs\brdrw10\brsp20
 \brdrl\brdrs\brdrw10\brsp80
 \brdrb\brdrs\brdrw10\brsp20
 \brdrr\brdrs\brdrw10\brsp80
-%s
-\par}
-''' % r'\line '.join(i.emit_rtf(**kwargs) for i in self.children)
+{body}
+\par}}
+'''
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'''\begin{displayquote}
-%s
-\end{displayquote}
-''' % r'\\'.join(i.emit_latex(**kwargs) for i in self.children)
+		body = self.join_children(r'\\', 'latex', **kwargs)
+		return rf'''\begin{{displayquote}}
+{body}
+\end{{displayquote}}
+'''
 
 	def emit_jd(self, **kwargs) -> str:
 		return ''.join('>' + i.emit_jd(**kwargs) for i in self.children) + '\n'
@@ -424,10 +412,10 @@ class Blockquote(Node):
 
 class Math(Node):
 	def emit_html(self, **kwargs) -> str:
-		return ''.join(i.emit_html(**kwargs) for i in self.children)
+		return self.join_children('', 'html', **kwargs)
 
 	def emit_latex(self, **kwargs) -> str:
-		text = ''.join(i.emit_latex(**kwargs) for i in self.children)
+		text = self.join_children('', 'latex', **kwargs)
 		for regex, subst in latex_math_subst:
 			text = text.replace(regex, subst)
 		return text
@@ -446,54 +434,46 @@ class Table(Node):
 		self.alignment = alignment
 
 	def emit_html(self, **kwargs) -> str:
-		caption_html = '<caption>%s</caption>' % ''.join(i.emit_html(**kwargs) for i in self.caption) if self.caption else ''
-		return '''<table>
-%s
-<thead>%s</thead>
-<tbody>%s</tbody>
+		caption_html = f'<caption>{"".join(i.emit_html(**kwargs) for i in self.caption)}</caption>' if self.caption else ''
+		return f'''<table>
+{caption_html}
+<thead>{self.children[0].emit_html(**kwargs)}</thead>
+<tbody>{"".join(i.emit_html(**kwargs) for i in self.children[1:])}</tbody>
 </table>
-''' % (
-			caption_html,
-			self.children[0].emit_html(**kwargs),
-			''.join(i.emit_html(**kwargs) for i in self.children[1:]),
-		)
+'''
 
 	def emit_latex(self, **kwargs) -> str:
-		caption_latex = r'\caption{%s}' % ''.join(i.emit_latex(**kwargs) for i in self.caption) if self.caption else ''
-		alignment_string = '{%s}' % '|'.join(self.alignment_map[i] for i in self.alignment)
+		caption_latex = rf'\caption{{{"".join(i.emit_latex(**kwargs) for i in self.caption)}}}' if self.caption else ''
+		alignment_string = f'{{{"|".join(self.latex_alignment_map[i] for i in self.alignment)}}}'
+		body = ' \\\\\n'.join(i.emit_latex(**kwargs) for i in self.children[1:])
 
-		return r'''\begin{table}
-%s
-\begin{tabular}%s
-%s\\ \hline
-%s
-\end{tabular}
-\end{table}
-''' % (
-			caption_latex,
-			alignment_string,
-			self.children[0].emit_latex(**kwargs),
-			' \\\\\n'.join(i.emit_latex(**kwargs) for i in self.children[1:])
-		)
+		return rf'''\begin{{table}}
+{caption_latex}
+\begin{{tabular}}{alignment_string}
+{self.children[0].emit_latex(**kwargs)}\\ \hline
+{body}
+\end{{tabular}}
+\end{{table}}
+'''
 
 	def emit_jd(self, **kwargs) -> str:
-		return '«%s»' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'«{self.join_children("", "jd", **kwargs)}»'
 
 
 class TableRow(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<tr>%s</tr>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<tr>{self.join_children("", "html", **kwargs)}</tr>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return ' & '.join(i.emit_latex(**kwargs) for i in self.children)
+		return self.join_children(' & ', 'latex', **kwargs)
 
 
 class TableHeader(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<th>%s</th>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<th>{self.join_children("", "html", **kwargs)}</th>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return self.join_children('', 'latex', **kwargs)
 
 
 class TableCell(Node):
@@ -508,57 +488,49 @@ class TableCell(Node):
 		self.align = align
 
 	def emit_html(self, **kwargs) -> str:
-		return '<td style="text-align: %s;">%s</td>' % (
-			self.html_align_map[self.align],
-			''.join(i.emit_html(**kwargs) for i in self.children),
-		)
+		return f'<td style="text-align: {self.html_align_map[self.align]};">{self.join_children("", "html", **kwargs)}</td>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return self.join_children('', 'latex', **kwargs)
 
 
 class Link(Node):
-	def __init__(self, linked_text: Node, url: str) -> Node:
+	def __init__(self, linked_text: Node, url: str, ignore_link_translation: bool=False) -> None:
 		# TODO: make this take a generic list of children instead of linked_text node
 		super().__init__([linked_text])
 		self.url = html.escape(url)
 		self.linked_text = linked_text
+		self.ignore_link_translation = ignore_link_translation
 
 	def emit_html(self, link_translation: str=None, **kwargs) -> str:
 		url = self.url
-		if link_translation:
+		if link_translation and not self.ignore_link_translation:
 			url = globalv.ext_translation(url, link_translation)
 
-		return '<a href="%s">%s</a>' % (
-			url,
-			self.linked_text.emit_html(link_translation=link_translation, **kwargs),
-		)
+		return f'<a href="{url}">{self.linked_text.emit_html(link_translation=link_translation, **kwargs)}</a>'
 
 	def emit_rtf(self, link_translation: str=None, **kwargs) -> str:
-		url = globalv.ext_translation(self.url, link_translation) if link_translation else self.url
+		if link_translation and not self.ignore_link_translation:
+			url = globalv.ext_translation(self.url, link_translation)
+		else:
+			url = self.url
 
-		linked_cited = self.linked_text.emit_html(
-			link_translation=link_translation,
-			**kwargs
-		)
+		linked_cited = self.linked_text.emit_html(link_translation=link_translation, **kwargs)
 
-		return r'''{\field{\*\fldinst{HYPERLINK "%s"
-}}{\fldrslt{\ul
-%s
-}}}''' % (url, linked_cited)
+		return rf'''{{\field{{\*\fldinst{{HYPERLINK "{url}"
+}}}}{{\fldrslt{{\ul
+{linked_cited}
+}}}}}}'''
 
 	def emit_latex(self, link_translation: str=None, **kwargs) -> str:
 		url = self.url
-		if link_translation:
+		if link_translation and not self.ignore_link_translation:
 			url = globalv.ext_translation(url, link_translation)
-		return r' \href{%s}{%s} ' % (
-			url,
-			self.linked_text.emit_latex(link_translation=link_translation, **kwargs)
-		)
+		return rf' \href{{{url}}}{{{self.linked_text.emit_latex(link_translation=link_translation, **kwargs)}}} '
 
 	def emit_jd(self, **kwargs) -> str:
 		# No extension translation needed when exporting to .jd
-		return '[%s](%s)' % (self.linked_text.emit_jd(**kwargs), self.url)
+		return f'[{self.linked_text.emit_jd(**kwargs)}]({self.url})'
 
 
 class ReferenceLink(Node):
@@ -568,9 +540,13 @@ class ReferenceLink(Node):
 		self.cited_node = cited_node
 		self.ref_key = ref_key
 
-	def emit_html(self, link_translation: str=None, ref_style: bool=False, **kwargs) -> str:
+	def _check_ref_exists(self) -> None:
 		if not globalv.references[self.ref_key]:
-			raise Exception("Missing definition for reference '%s'" % self.ref_key)
+			raise Exception(f'Missing definition for reference "{self.ref_key}"')
+
+	def emit_html(self, link_translation: str=None, ref_style: bool=False, **kwargs) -> str:
+		self._check_ref_exists()
+
 		if ref_style:
 			place = list(globalv.references.keys()).index(self.ref_key) + 1
 			emitted_html = self.cited_node.emit_html(
@@ -578,17 +554,16 @@ class ReferenceLink(Node):
 				ref_style=True,
 				**kwargs
 			)
-			return '%s<cite>[<a href="#%s" class="reference">%d</a>]</cite>' % (emitted_html, self.ref_key, place)
+			return f'{emitted_html}<cite>[<a href="#{self.ref_key}" class="reference">{place}</a>]</cite>'
 		else:
 			_, href = globalv.references[self.ref_key]
 			href = html.escape(href)
 			if link_translation:
-				href = link_translation(href, link_translation)
-			return '<a href="%s">%s</a>' % (href, self.cited_node)
+				href = globalv.ext_translation(href, link_translation)
+			return f'<a href="{href}">{self.cited_node}</a>'
 
 	def emit_rtf(self, link_translation: str=None, ref_style: bool=False, **kwargs) -> str:
-		if not globalv.references[self.ref_key]:
-			raise Exception("Missing definition for reference '%s'" % self.ref_key)
+		self._check_ref_exists()
 
 		cited_emmited = self.cited_node.emit_rtf(
 			link_translation=link_translation,
@@ -601,34 +576,42 @@ class ReferenceLink(Node):
 				ref_style,
 				**kwargs
 			)
-			return r'%s{\super\chftn}{\footnote\pard\plain\chftn %s}' % (cited_emmited, ref_emmited)
+			return rf'{cited_emmited}{{\super\chftn}}{{\footnote\pard\plain\chftn {ref_emmited}}}'
 		else:
 			_, href = globalv.references[self.ref_key]
 			href = html.escape(href)
 			if link_translation:
-				href = link_translation(href, link_translation)
-			return r'''{\field{\*\fldinst{HYPERLINK
-"%s"
-}}{\fldrslt{\ul
-%s
-}}}''' % (href, cited_emmited)
+				href = globalv.ext_translation(href, link_translation)
+			return rf'''{{\field{{\*\fldinst{{HYPERLINK
+"{href}"
+}}}}{{\fldrslt{{\ul
+{cited_emmited}
+}}}}}}'''
 
 	def emit_latex(self, link_translation: str=None, ref_style: bool=False, **kwargs) -> str:
-		if not globalv.references[self.ref_key]:
-			raise Exception("Missing definition for reference '%s'" % self.ref_key)
+		self._check_ref_exists()
+
 		if ref_style:
 			ref_emmited = self.cited_node.emit_latex(
 				link_translation=link_translation,
 				ref_style=True,
 				**kwargs
 			)
-			return r'%s \cite{%s}' % (ref_emmited, self.ref_key)
+			return rf'{ref_emmited} \cite{{{self.ref_key}}}'
 		else:
 			_, href = globalv.references[self.ref_key]
 			href = html.escape(href)
 			if link_translation:
 				href = globalv.ext_translation(href, link_translation)
-			return r' \href{%s}{%s}' % (href, self.cited_node)
+			return rf' \href{{{href}}}{{{self.cited_node}}}'
+
+
+class ImplicitLink(Link):
+	def __init__(self, linked_text: Node, url: str) -> None:
+		super().__init__(linked_text, url, ignore_link_translation=True)
+
+	def emit_jd(self, **kwargs) -> str:
+		return self.linked_text.emit_jd(**kwargs)
 
 
 class Content(Node):
@@ -658,380 +641,301 @@ class Content(Node):
 			template = '<object data="%(src)s"></object>'
 
 		# TODO: make figures a command line option
-		return '<figure>%s<figcaption>%s</figcaption></figure>' % (template % attributes, self.title.emit_html(**kwargs))
+		return f'<figure>{template % attributes}<figcaption>{self.title.emit_html(**kwargs)}</figcaption></figure>'
 
 	def emit_latex(self, **kwargs) -> str:
 		dtype = globalv.content_filetypes(self.src)
 		if dtype == 'image':
-			elem = r'\includegraphics[width=\textwidth]{%s}' % self.src
+			elem = rf'\includegraphics[width=\textwidth]{{{self.src}}}'
 		else:
 			elem = ''
 
-		return r'''
-\begin{figure}
-\begin{center}
-\caption{%s}
-%s
-\end{center}
-\end{figure}
-''' % (self.title, elem)
+		return rf'''
+\begin{{figure}}
+\begin{{center}}
+\caption{{{self.title}}}
+{elem}
+\end{{center}}
+\end{{figure}}
+'''
 
 	def emit_jd(self, **kwargs) -> str:
 		title_text = self.title.emit_jd(**kwargs)
-		title = ' "' + title_text + '"' if title_text else ''
-		return '![%s](%s%s)' % (self.alt.emit_jd(**kwargs), self.src, title)
-
-
-class ImplicitLink(TextNode):
-	def emit_html(self, **kwargs) -> str:
-		return '<a href="%s" class="implicit">%s</a>' % (self.text, self.text)
-
-	def emit_rtf(self, **kwargs) -> str:
-		return r'''{\field{\*\fldinst{HYPERLINK "%s"
-}}{\fldrslt{\ul
-%s
-}}}''' % (self.text, self.text)
-
-	def emit_latex(self, **kwargs) -> str:
-		return r' \url{%s}' % self.text
-
-
-class ImplicitEmail(TextNode):
-	def emit_html(self, **kwargs) -> str:
-		return '<a href="mailto:%s" class="implicit">%s</a>' % (self.text, self.text)
-
-	def emit_rtf(self, **kwargs) -> str:
-		return r'''{\field{\*\fldinst{HYPERLINK "mailto:%s"
-}}{\fldrslt{\ul
-%s
-}}}''' % (self.text, self.text)
-
-	def emit_latex(self, **kwargs) -> str:
-		return r'\href{mailto:%s}{%s}' % (self.text, self.text)
+		title = f' "{title_text}"' if title_text else ''
+		return f'![{self.alt.emit_jd(**kwargs)}]({self.src}{title})'
 
 
 # For text ----------------------------------------------------------------------
 
+
 class Plaintext(TextNode):
 	pass
+
 
 # TODO: Shouldn't this be a text node?
 class CodeInline(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<code>%s</code>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<code>{self.join_children("", "html", **kwargs)}</code>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'\texttt{%s}' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return rf'\texttt{{{self.join_children("", "latex", **kwargs)}}}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return '`%s`' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'`{self.join_children("", "jd", **kwargs)}`'
 
 
 class Emph(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<em>%s</em>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<em>{self.join_children("", "html", **kwargs)}</em>'
 
 	def emit_rtf(self, **kwargs) -> str:
-		return r'{\i %s}' % ''.join(i.emit_rtf(**kwargs) for i in self.children)
+		return rf'{{\i {self.join_children("", "rtf", **kwargs)}}}'
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'\textit{%s}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return rf'\textit{{{self.join_children("", "latex", **kwargs)}}}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return '*%s*' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'*{self.join_children("", "jd", **kwargs)}*'
 
 
 class Strong(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<strong>%s</strong>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<strong>{self.join_children("", "html", **kwargs)}</strong>'
 
 	def emit_rtf(self, **kwargs) -> str:
-		return r'{\b %s}' % ''.join(i.emit_rtf(**kwargs) for i in self.children)
+		return rf'{{\b {self.join_children("", "rtf", **kwargs)}}}'
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'\textbf{%s}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return rf'\textbf{{{self.join_children("", "latex", **kwargs)}}}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return '**%s**' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'**{self.join_children("", "jd", **kwargs)}**'
 
 
 class StrongEmph(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<strong><em>%s</em></strong>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<strong><em>{self.join_children("", "html", **kwargs)}</em></strong>'
 
 	def emit_rtf(self, **kwargs) -> str:
-		return r'{\b \i %s}' % ''.join(i.emit_rtf(**kwargs) for i in self.children)
+		return rf'{{\b \i {self.join_children("", "rtf", **kwargs)}}}'
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'\textit{\textbf{%s}}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return rf'\textit{{\textbf{{{self.join_children("", "latex", **kwargs)}}}}}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return '***%s***' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'***{self.join_children("", "jd", **kwargs)}***'
 
 
 class Strikethrough(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<del>%s</del>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<del>{self.join_children("", "html", **kwargs)}</del>'
 
 	def emit_rtf(self, **kwargs) -> str:
-		return r'{\strike %s\par}' % r'\line '.join(i.emit_rtf(**kwargs) for i in self.children)
+		body = self.join_children(r'\line ', 'rtf', **kwargs)
+		return rf'{{\strike {body}\par}}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return '~~%s~~' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'~~{self.join_children("", "jd", **kwargs)}~~'
 
 
 # MATH -------------------
 
 class MathInline(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<span class="math">%s</span>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<span class="math">{self.join_children("", "html", **kwargs)}</span>'
 
 	def emit_latex(self, **kwargs) -> str:
-		text = ''.join(i.emit_latex(**kwargs) for i in self.children)
+		text = self.join_children("", "latex", **kwargs)
 		for regex, subst in latex_math_subst:
 			text = text.replace(regex, subst)
-		return '$%s$' % text
+		return f'${text}$'
 
 	def emit_jd(self, **kwargs) -> str:
-		return '«%s»' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'«{self.join_children("", "jd", **kwargs)}»'
 
 
 class Parenthesis(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '(%s)' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'({self.join_children("", "html", **kwargs)})'
 
 	def emit_mathml(self, **kwargs) -> str:
-		return '<mfenced open="(" close=")"><mrow>%s</mrow></mfenced>' % ''.join(i.emit_mathml(**kwargs) for i in self.children)
+		return f'<mfenced open="(" close=")"><mrow>{self.join_children("", "mathml", **kwargs)}</mrow></mfenced>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return '(%s)' % ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return f'({self.join_children("", "latex", **kwargs)})'
 
 	def emit_jd(self, **kwargs) -> str:
-		return '(%s)' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'({self.join_children("", "jd", **kwargs)})'
 
 
 class Braces(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '{}' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'{{{self.join_children("", "html", **kwargs)}}}'
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'\{%s\}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return rf'\{{{self.join_children("", "latex", **kwargs)}\}}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return '{%s}' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'{{{self.join_children("", "jd", **kwargs)}}}'
 
 
 class Brackets(Node):
 	def emit_html(self, **kwargs) -> str:
-		return ''.join(i.emit_html(**kwargs) for i in self.children)
+		return self.join_children("", "html", **kwargs)
 
 	def emit_mathml(self, **kwargs) -> str:
-		return ''.join(i.emit_mathml(**kwargs) for i in self.children)
+		return self.join_children("", "mathml", **kwargs)
 
 	def emit_jd(self, **kwargs) -> str:
-		return '[%s]' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'[{self.join_children("", "jd", **kwargs)}]'
 
 
-class Sum(Node):
+class CapitalNotation(Node):
 	# TODO: emit_mathml
+	def _capital_notation_parts(self, fmt: str, **kwargs):
+		lower = getattr(self.children[0], f'emit_{fmt}')(**kwargs)
+		upper = getattr(self.children[1], f'emit_{fmt}')(**kwargs)
+		terms = ''.join(getattr(i, f'emit_{fmt}')(**kwargs) for i in self.children[2:])
+		return lower, upper, terms
+
+	def _get_tag(self) -> str:
+		return type(self).__name__.lower()
+
 	def emit_html(self, **kwargs) -> str:
-		return '''
-	<math><mstyle displaystyle="true"><mrow>
-	<munderover>
-		<mo>&sum;</mo>
-		<mrow>%s</mrow><mrow>%s</mrow>
-	</munderover>
-	<mrow></mrow>
-	</mrow></mstyle></math>
-	%s
-	''' % (
-			self.children[0].emit_mathml(**kwargs),
-			self.children[1].emit_mathml(**kwargs),
-			''.join(i.emit_html(**kwargs) for i in self.children[2:]),
-		)
+		lower, upper, terms = self._capital_notation_parts('mathml', **kwargs)
+		return f'''
+			<math><mstyle displaystyle="true"><mrow>
+			<munderover>
+				<mo>&{self._get_tag()};</mo>
+				<mrow>{lower}</mrow><mrow>{upper}</mrow>
+			</munderover>
+			<mrow>{terms}</mrow>
+			</mrow></mstyle></math>
+			'''
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'\displaystyle\sum^{%s}_{%s} %s' % (
-			self.children[1].emit_latex(**kwargs),
-			self.children[0].emit_latex(**kwargs),
-			''.join(i.emit_latex(**kwargs) for i in self.children[2:]),
-		)
+		lower, upper, terms = self._capital_notation_parts('latex', **kwargs)
+		return rf'\displaystyle\{self._get_tag()}^{{{upper}}}_{{{lower}}} {terms}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return r'sum[%s %s %s]' % (
-			self.children[0].emit_jd(**kwargs),
-			self.children[1].emit_jd(**kwargs),
-			''.join(i.emit_jd(**kwargs) for i in self.children[2:]),
-		)
+		lower, upper, terms = self._capital_notation_parts('jd', **kwargs)
+		return rf'{self._get_tag()}[{lower} {upper} {terms}]'
 
 
-class Prod(Node):
-	#TODO: emit_mathml
-	def emit_html(self, **kwargs) -> str:
-		return '''
-	<math><mstyle displaystyle="true"><mrow>
-	<munderover>
-		<mo>&prod;</mo>
-		<mrow>%s</mrow><mrow>%s</mrow>
-	</munderover>
-	<mrow></mrow>
-	</mrow></mstyle></math>
-	%s
-	''' % (
-			self.children[0].emit_mathml(**kwargs),
-			self.children[1].emit_mathml(**kwargs),
-			''.join(i.emit_html(**kwargs) for i in self.children[2:]),
-		)
-
-	def emit_latex(self, **kwargs) -> str:
-		return r'\displaystyle\prod^{%s}_{%s} %s' % (
-			self.children[1].emit_latex(**kwargs),
-			self.children[0].emit_latex(**kwargs),
-			''.join(i.emit_latex(**kwargs) for i in self.children[2:]),
-		)
-
-	def emit_jd(self, **kwargs) -> str:
-		return r'prod[%s %s %s]' % (
-			self.children[0].emit_jd(**kwargs),
-			self.children[1].emit_jd(**kwargs),
-			''.join(i.emit_jd(**kwargs) for i in self.children[2:]),
-		)
+class Sum(CapitalNotation):
+	pass
 
 
-class Int(Node):
-	# TODO: emit_mathml
-	def emit_html(self, **kwargs) -> str:
-		return '''
-	<math><mstyle displaystyle="true"><mrow>
-	<munderover>
-		<mo>&int;</mo>
-		<mrow>%s</mrow><mrow>%s</mrow>
-	</munderover>
-	<mrow></mrow>
-	</mrow></mstyle></math>
-	%s
-	''' % (
-			self.children[0].emit_mathml(**kwargs),
-			self.children[1].emit_mathml(**kwargs),
-			''.join(i.emit_html(**kwargs) for i in self.children[2:]),
-		)
+class Prod(CapitalNotation):
+	pass
 
-	def emit_latex(self, **kwargs) -> str:
-		return r'\displaystyle\sum^{%s}_{%s} %s' % (
-			self.children[1].emit_latex(**kwargs),
-			self.children[0].emit_latex(**kwargs),
-			''.join(i.emit_latex(**kwargs) for i in self.children[2:]),
-		)
 
-	def emit_jd(self, **kwargs) -> str:
-		return r'int[%s %s %s]' % (
-			self.children[0].emit_jd(**kwargs),
-			self.children[1].emit_jd(**kwargs),
-			''.join(i.emit_jd(**kwargs) for i in self.children[2:]),
-		)
+class Int(CapitalNotation):
+	pass
+
 
 class Sqrt(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '√<span style="border-top: 1px solid">%s</span>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'√<span style="border-top: 1px solid">{self.join_children("", "html", **kwargs)}</span>'
 
 	def emit_mathml(self, **kwargs) -> str:
-		return '<msqrt>%s</msqrt>' % ''.join(i.emit_mathml(**kwargs) for i in self.children)
+		return f'<msqrt>{self.join_children("", "mathml", **kwargs)}</msqrt>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return r'\sqrt{%s}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return rf'\sqrt{{{self.join_children("", "latex", **kwargs)}}}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return r'sqrt[%s]' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return rf'sqrt[{self.join_children("", "jd", **kwargs)}]'
 
 
 #TODO: Properly nest Subscript and Superscript nodes, having both the base and "exponent"
 
 class SuperscriptBrackets(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<sup>%s</sup>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<sup>{self.join_children("", "html", **kwargs)}</sup>'
 
 	def emit_mathml(self, **kwargs):
-		return '<msup><msrow></msrow><msrow>%s</msrow></mssup>' % ''.join(i.emit_mathml(**kwargs) for i in self.children)
+		return f'<msup><msrow></msrow><msrow>{self.join_children("", "mathml", **kwargs)}</msrow></mssup>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return '^{%s}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return f'^{self.join_children("", "latex", **kwargs)}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return '^[%s]' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'^[{self.join_children("", "jd", **kwargs)}]'
 
 
 class SubscriptBrackets(Node):
 	def emit_html(self, **kwargs) -> str:
-		return '<sub>%s</sub>' % ''.join(i.emit_html(**kwargs) for i in self.children)
+		return f'<sub>{self.join_children("", "html", **kwargs)}</sub>'
 
 	def emit_mathml(self, **kwargs) -> str:
-		return '<msub><msrow></msrow><msrow>%s</msrow></mssub>' % ''.join(i.emit_mathml(**kwargs) for i in self.children)
+		return f'<msub><msrow></msrow><msrow>{self.join_children("", "mathml", **kwargs)}</msrow></mssub>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return '_{%s}' % ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return f'_{self.join_children("", "latex", **kwargs)}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return '_[%s]' % ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return f'_[{self.join_children("", "jd", **kwargs)}]'
 
 
 class Subscript(TextNode):
 	def emit_html(self, **kwargs) -> str:
-		return '<sub>%s</sub>' % html.escape(self.text, quote=True)
+		return f'<sub>{html.escape(self.text, quote=True)}</sub>'
 
 	def emit_mathml(self, **kwargs) -> str:
-		return '<msub><mrow></mrow><mrow>%s</mrow></mssub>' % html.escape(self.text, quote=True)
+		return f'<msub><mrow></mrow><mrow>{html.escape(self.text, quote=True)}</mrow></mssub>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return '_{%s}' % self.text
+		return f'_{self.text}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return '_%s' % self.text
+		return f'_{self.text}'
 
 
 class Superscript(TextNode):
 	def emit_html(self, **kwargs) -> str:
-		return '<sup>%s</sup>' % html.escape(self.text, quote=True)
+		return f'<sup>{html.escape(self.text, quote=True)}</sup>'
 
 	def emit_mathml(self, **kwargs) -> str:
-		return '<msup><mrow></mrow><mrow>%s</mrow></mssup>' % html.escape(self.text, quote=True)
+		return f'<msup><mrow></mrow><mrow>{html.escape(self.text, quote=True)}</mrow></mssup>'
 
 	def emit_latex(self, **kwargs) -> str:
-		return '^{%s}' % self.text
+		return f'^{self.text}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return '^%s' % self.text
+		return f'^{self.text}'
 
 
 class Identifier(TextNode):
 	def emit_html(self, **kwargs) -> str:
-		return '<em>%s</em>' % html.escape(self.text, quote=True)
+		return f'<em>{html.escape(self.text, quote=True)}</em>'
 
 	def emit_mathml(self, **kwargs) -> str:
-		return '<mi>%s</mi>' % self.text
+		return f'<mi>{self.text}</mi>'
 
 
 class Operator(TextNode):
 	def emit_html(self, **kwargs) -> str:
-		return ' %s ' % html.escape(self.text, quote=True)
+		return f' {html.escape(self.text, quote=True)} '
 
 	def emit_mathml(self, **kwargs) -> str:
-		return '<mo>%s</mo>' % self.text
+		return f'<mo>{self.text}</mo>'
 
 
 class Comment(TextNode):
 	def emit_html(self, **kwargs) -> str:
-		return ' %s ' % html.escape(self.text, quote=True)
+		return f' {html.escape(self.text, quote=True)} '
 
 	def emit_latex(self, **kwargs) -> str:
-		return r' \text{%s}' % self.text
+		return rf' \text{{{self.text}}}'
 
 	def emit_jd(self, **kwargs) -> str:
-		return ' # %s # ' % self.text
+		return f' # {self.text} # '
 
 
 class Number(TextNode):
 	def emit_mathml(self, **kwargs) -> str:
-		return '<mn>%s</mn>' % self.text
+		return f'<mn>{self.text}</mn>'
 
 
 class Newline(TextNode):
