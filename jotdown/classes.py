@@ -20,19 +20,22 @@ class Node:
 		return string.join(getattr(i, f'emit_{fmt}')(**kwargs) for i in self.children)
 
 	def emit_html(self, **kwargs) -> str:
-		return ''.join(i.emit_html(**kwargs) for i in self.children)
+		return self.join_children('', 'html', **kwargs)
 
 	def emit_rtf(self, **kwargs) -> str:
-		return ''.join(i.emit_rtf(**kwargs) for i in self.children)
+		return self.join_children('', 'rtf', **kwargs)
 
 	def emit_latex(self, **kwargs) -> str:
-		return ''.join(i.emit_latex(**kwargs) for i in self.children)
+		return self.join_children('', 'latex', **kwargs)
 
 	def emit_debug(self, indent: int=0, **kwargs) -> str:
 		return ('\t' * indent) + type(self).__name__ + '\n' + ''.join(i.emit_debug(indent + 1, **kwargs) for i in self.children)
 
 	def emit_jd(self, **kwargs) -> str:
-		return ''.join(i.emit_jd(**kwargs) for i in self.children)
+		return self.join_children('', 'jd', **kwargs)
+
+	def emit_plain(self, **kwargs) -> str:
+		return self.join_children('', 'plain', **kwargs)
 
 
 class TextNode(Node):
@@ -79,6 +82,8 @@ class TextNode(Node):
 
 	def emit_jd(self, **kwargs) -> str:
 		return self.text
+
+	emit_plain = emit_jd
 
 
 # For blocks -------------------------------------------------------------------------
@@ -141,6 +146,9 @@ class Document(Node):
 			'institution': self.hostname,
 		}
 		return globalv.read_with_encoding(stylesheet) % field_dict
+
+	def emit_plain(self, **kwargs) -> str:
+		return self.join_children('\n', 'plain', **kwargs)
 
 
 class Heading(Node):
@@ -311,7 +319,7 @@ class ReferenceItem(Node):
 		super().__init__()
 
 	def emit_html(self, **kwargs) -> str:
-		return f'<li><a id="self.ref_key"><span>{self.content.emit_html(**kwargs)}</span></a></li>'
+		return f'<li><a id="{self.ref_key}"><span>{self.content.emit_html(**kwargs)}</span></a></li>'
 
 	def emit_latex(self, **kwargs) -> str:
 		return rf'\bibitem{{{self.ref_key}}} {self.content.emit_latex(**kwargs)} '
@@ -537,6 +545,7 @@ class Link(Node):
 class ReferenceLink(Node):
 	def __init__(self, cited_node: Node, ref_key: str) -> None:
 		# TODO:  make this take a generic list of children instead of a singleton cited_node
+		# TODO: make sure the ref_key is globally unique
 		super().__init__([cited_node])
 		self.cited_node = cited_node
 		self.ref_key = ref_key
@@ -572,9 +581,10 @@ class ReferenceLink(Node):
 			**kwargs
 		)
 		if ref_style:
-			ref_emmited, _ = globalv.references[self.ref_key].emit_rtf(
-				link_translation,
-				ref_style,
+			ref, _ = globalv.references[self.ref_key]
+			ref_emmited = ref.emit_rtf(
+				link_translation=link_translation,
+				ref_style=True,
 				**kwargs
 			)
 			return rf'{cited_emmited}{{\super\chftn}}{{\footnote\pard\plain\chftn {ref_emmited}}}'
@@ -627,8 +637,8 @@ class Content(Node):
 		dtype = globalv.content_filetypes(self.src)
 		attributes = {
 			'src': self.src,
-			'title': self.title.emit_html(**kwargs),
-			'alt': self.alt.emit_html(**kwargs),
+			'title': self.title.emit_plain(**kwargs),
+			'alt': self.alt.emit_plain(**kwargs),
 		}
 		if dtype == 'image':
 			template = '<img src="%(src)s" title="%(title)s" alt="%(alt)s">'
@@ -654,7 +664,7 @@ class Content(Node):
 		return rf'''
 \begin{{figure}}
 \begin{{center}}
-\caption{{{self.title}}}
+\caption{{{self.title.emit_latex(**kwargs)}}}
 {elem}
 \end{{center}}
 \end{{figure}}

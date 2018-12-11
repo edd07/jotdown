@@ -5,7 +5,7 @@ import re
 import mimetypes
 import typing
 
-from errors import EncodingException
+from jotdown.errors import EncodingException
 
 references = OrderedDict()  # References for citation mode
 html_document_ids = set()  # Set of strings that are ids to certain html elements
@@ -22,6 +22,7 @@ style_ext = {
 	'latex': '.tex',
 	'debug': '',
 	'jd': '',
+	'plain': '',
 }
 
 known_encodings = {

@@ -105,7 +105,7 @@ Links and images
 This is an http://implicit.com/link and a https://secure.one
 
 This is an implicit email@address.com and a [Link with a custom title and relative URL](src/style.css)
-This is a [reference-style link][ref]. These can be rendered as citations with a command line option, and can have content that does not work [as a link][citation]
+This is a [reference-style link][ref]. These are rendered as citations by default, but can be disabled with a command line option. Citations can have rich content inside them that does not work [as a link][citation]
 [ref]: http://example.com
 
 Obligatory cat
