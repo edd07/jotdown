@@ -32,6 +32,7 @@ The `directory` structure will be replicated under `output_directory`, and all `
 
 * `-r` or `--md-refs`: Treat citation-style links in a manner compatible with Markdown. Jotdown's own behaviour (allowing markup inside citations, not only links) is default.
 * `-a` or `--author`: Specify an author for the compiled document. Defaults to the system's current user name.
+
 A note on encodings
 -------------------
 
