@@ -1,8 +1,11 @@
+import logging
 import os
 from collections import OrderedDict
 import re
 import mimetypes
 import typing
+
+from errors import EncodingException
 
 references = OrderedDict()  # References for citation mode
 html_document_ids = set()  # Set of strings that are ids to certain html elements
@@ -11,6 +14,27 @@ re_flags = re.UNICODE
 
 # Custom types for clearer type hinting
 Block = typing.List[str]
+
+style_ext = {
+	# Output format: extension of "stylesheet" file
+	'html': '.css',
+	'rtf': '.rtf',
+	'latex': '.tex',
+	'debug': '',
+	'jd': '',
+}
+
+known_encodings = {
+	'.debug': 'utf-8',
+	'.rtf': 'ascii',
+}
+
+explicit_encodings = {
+	# File extension: RE of how to find its explicit encoding
+	'.css': re.compile(rb'^@charset "([\w-]+)";'),
+	'.html': re.compile(rb'.*<meta\s[^>]*\scharset=[\'"]([\w-]+)[\'"]\s*[^>]*/\s*>'),  # TODO: accepts mismatching quotes
+	'.tex': re.compile(rb'.*\\usepackage\[([\w-]+)\]{inputenc}'),
+}
 
 
 def content_filetypes(fname: str) -> typing.Optional[str]:
@@ -56,59 +80,75 @@ def rtf_escape_unicode(string: str) -> str:
 			# \uN? syntax, with N as a decimal, negative number
 			res.extend(r'\uc1\u%d?' % (cp - 65536))
 		else:
-			raise UnicodeEncodeError('Document contains characters with Unicode codepoints greater that 65536, not supported by RTF')
+			raise EncodingException(
+				'Document contains characters with Unicode codepoints greater that 65536, not supported by RTF'
+			)
 	return ''.join(res)
 
 
-def read_with_encoding(fname: str, encoding=None) -> str:
+def read_with_encoding(path: str) -> str:
 	"""
-	Returns the context of a file of unknown encoding, hopefully.
+	Returns the contents of a file of unknown encoding, hopefully.
 	"""
 	# TODO: Avoid having to read the whole file into memory
 
-	# Explicit encoding
+	fname, ext = os.path.splitext(path)
+	encoding = None
+
+	# Known encodings
+	if ext in known_encodings:
+		encoding = known_encodings[ext]
+		logging.info(f'Reading {path} with known encoding {encoding}')
+
+	# Encoding could be explicitly announced in the file
+	elif ext in explicit_encodings:
+		with open(path, 'rb') as f:
+			head = f.read(1024)
+		m = explicit_encodings[ext].match(head)
+		if m:
+			encoding = str(m.group(1), encoding='ascii')
+			logging.info(f'Reading {path} with explicit encoding {encoding}')
+
 	if encoding:
-		with open(fname, encoding=encoding) as f:
-			if __debug__: print(f'Reading {fname} with {encoding}')
+		with open(path, encoding=encoding) as f:
 			return f.read()
 
 	# If chardet is installed, use it
 	try:
 		from chardet import detect
-		with open(fname, 'rb') as f:
-			raw_data = f.read()
-			guessed_encoding = detect(raw_data)['encoding']
-			if __debug__: print(f'Reading {fname} with chardet, encoding is {guessed_encoding}')
-			return str(raw_data, encoding=guessed_encoding)
 	except ImportError:
 		pass
-
+	else:
+		with open(path, 'rb') as f:
+			raw_data = f.read()
+			guessed_encoding = detect(raw_data)['encoding']
+			logging.info(f'Reading {path} with chardet\'d encoding {guessed_encoding}')
+			return str(raw_data, encoding=guessed_encoding)
 	# Guess
 	try:
-		with open(fname, encoding='utf-8') as f:  # Is it a sane system?
-			if __debug__: print(f'Trying to read {fname} with utf-8')
+		with open(path, encoding='utf-8') as f:  # Is it a sane system?
+			logging.info(f'Trying to read {path} with utf-8')
 			return f.read()
 	except UnicodeDecodeError:
 		pass
 
 	try:
-		with open(fname, encoding='cp1252') as f:  # Is it Windows?
-			if __debug__: print(f'Trying to read {fname} with cp1252')
+		with open(path, encoding='cp1252') as f:  # Is it Windows?
+			logging.info(f'Trying to read {path} with cp1252')
 			return f.read()
 	except UnicodeDecodeError:
 		pass
 
 	try:
-		with open(fname, encoding='mac_roman') as f:  # Is it Mac?
-			if __debug__: print(f'Trying to read {fname} with mac_roman')
+		with open(path, encoding='mac_roman') as f:  # Is it Mac?
+			logging.info(f'Trying to read {path} with mac_roman')
 			return f.read()
 	except UnicodeDecodeError:
 		pass
 
 	try:
-		with open(fname) as f:  # Try default encoding
-			if __debug__: print(f'Trying to read {fname} with your system\'s default encoding. Godspeed.')
+		with open(path) as f:  # Try default encoding
+			logging.info(f'Trying to read {path} with your system\'s default encoding. Godspeed.')
 			return f.read()
 	except UnicodeDecodeError:
-		raise Exception(f'Could not open {fname}, unknown encoding')
-
+		raise EncodingException(f'Could not open {path}, unknown encoding')

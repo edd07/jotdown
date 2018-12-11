@@ -5,13 +5,14 @@ from typing import Iterable, Iterator, Generator, Tuple, Match, Optional, Union
 
 from jotdown.roman import from_roman, InvalidRomanNumeralError
 from jotdown.regex import *
+from jotdown.errors import ContextException
 
 from jotdown.globalv import re_flags, Block
 
 # Init RE objects
 re_heading_underline = compile(r'(-+|=+)\s*\n', flags=re_flags)
 re_heading_hashes = compile(r'(#+)([^#]*)#*', flags=re_flags)
-re_ulistitem = compile(r'^(\t*)[\*\-\+]\s+', flags=re_flags)
+re_ulistitem = compile(r'^(\t*)[*-+]\s+', flags=re_flags)
 re_olistitem = compile(r'^(\t*)(\w+)\.\s+', flags=re_flags)
 re_checklistitem = compile(r'^(\t*)-?\s*\[\s*([xX]?)\s*\]\s+', flags=re_flags)
 re_blockquoteline = compile(r'^((?:>\s?)*)', flags=re_flags)
@@ -25,14 +26,14 @@ re_math_close = compile(r'^»»»\s*$', flags=re_flags)
 text_tokens = [
 	(r'`', 'CodeInline_AMB'),
 
-	(r'\*\*\*', 'StrongEmph_AMB'),
-	(r'\b___', 'StrongEmph_AMB'),
+	(r'\*\*\*', 'StrongEmph_A_AMB'),
+	(r'\b___', 'StrongEmph_B_AMB'),
 
-	(r'\*\*', 'Strong_AMB'),
-	(r'\b__', 'Strong_AMB'),
+	(r'\*\*', 'Strong_A_AMB'),
+	(r'\b__', 'Strong_B_AMB'),
 
-	(r'\*', 'Emph_AMB'),
-	(r'\b_', 'Emph_AMB'),
+	(r'\*', 'Emph_A_AMB'),
+	(r'\b_', 'Emph_B_AMB'),
 
 	(r'~~', 'Strikethrough_AMB'),
 
@@ -156,7 +157,7 @@ def get_text_tokens(line_number: int, text: str) -> Iterator[Tuple[str, Tuple[st
 					text = text[m_len:]
 					break
 			else:
-				raise Exception(f'Unrecognized token at line {line_number}: {repr(text[:50])}')
+				raise ContextException(line_number, 'Unrecognized token', text)
 
 
 def get_math_tokens(line_offset: int, text: str) -> Iterator[Tuple[str, str]]:
@@ -180,13 +181,12 @@ def get_math_tokens(line_offset: int, text: str) -> Iterator[Tuple[str, str]]:
 				text = text[m_len:]
 				break
 		else:
-			raise Exception('Unrecognized math token at line {line_number}: {repr(text[:50])}')
+			raise ContextException(line_number, 'Unrecognized math token', text)
 
 
 def replace_math(text: str) -> str:
 	for k, v in math_subst:
 		text = sub(k, v, text)
-
 	return text
 
 
@@ -206,7 +206,7 @@ def block_is_horizontal_rule(block: Block) -> bool:
 def block_is_heading(block: Block) -> bool:
 	if _block_is_underline_heading(block):
 		return True
-	return block[0].startswith('#') and len(block) == 1
+	return len(block) == 1 and block[0].startswith('#')
 
 
 def _block_is_underline_heading(block: Block) -> bool:
@@ -298,7 +298,6 @@ def lex_olist(m: Match) -> Optional[Tuple[str, int]]:
 	"""
 	# TODO: support for non-latin alphabet numbering? HTML doesn't seem to support it
 	_, numeral = m.groups()
-
 	try:
 		return '1', int(numeral)  # is it an integer?
 	except ValueError:

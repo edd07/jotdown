@@ -5,6 +5,7 @@ import re
 from getpass import getuser
 from socket import gethostname
 from typing import Sequence, Iterable
+import logging
 
 import jotdown.globalv as globalv
 from jotdown.regex import latex_math_subst
@@ -90,9 +91,9 @@ class Document(Node):
 		self.author = getuser() if not author else author
 		self.hostname = gethostname()
 
-	def emit_html(self, stylesheet: str, stylesheet_enc: str=None, ref_style: bool=False, embed_css: bool=True, **kwargs) -> str:
+	def emit_html(self, stylesheet: str, ref_style: bool=False, embed_css: bool=True, **kwargs) -> str:
 		if embed_css:
-			css_string = f'<style>{globalv.read_with_encoding(stylesheet, stylesheet_enc)}</style>'
+			css_string = f'<style>{globalv.read_with_encoding(stylesheet)}</style>'
 		else:
 			css_string = f'<link rel="stylesheet" href="{stylesheet}"/>'
 
@@ -110,9 +111,9 @@ class Document(Node):
 </html>
 '''
 
-	def emit_rtf(self, stylesheet: str, stylesheet_enc: str=None, **kwargs) -> str:
+	def emit_rtf(self, stylesheet: str, **kwargs) -> str:
 		# TODO: Author in info, and create time
-		return rf'''{{\rtf1\ansi\deff0\widowctrl {globalv.read_with_encoding(stylesheet, stylesheet_enc)}
+		return rf'''{{\rtf1\ansi\deff0\widowctrl {globalv.read_with_encoding(stylesheet)}
 {{\info
 {{\title {self.name}}}
 {{\author PLACEHOLDER}}
@@ -122,7 +123,7 @@ class Document(Node):
 }}
 '''
 
-	def emit_latex(self, stylesheet: str, stylesheet_enc: str=None, ref_style: bool=False, **kwargs) -> str:
+	def emit_latex(self, stylesheet: str, ref_style: bool=False, **kwargs) -> str:
 		packages = r'''
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
@@ -139,7 +140,7 @@ class Document(Node):
 			'author': self.author,
 			'institution': self.hostname,
 		}
-		return globalv.read_with_encoding(stylesheet, stylesheet_enc) % field_dict
+		return globalv.read_with_encoding(stylesheet) % field_dict
 
 
 class Heading(Node):
@@ -791,7 +792,6 @@ class Brackets(Node):
 
 
 class CapitalNotation(Node):
-	# TODO: emit_mathml
 	def _capital_notation_parts(self, fmt: str, **kwargs):
 		lower = getattr(self.children[0], f'emit_{fmt}')(**kwargs)
 		upper = getattr(self.children[1], f'emit_{fmt}')(**kwargs)
@@ -802,15 +802,21 @@ class CapitalNotation(Node):
 		return type(self).__name__.lower()
 
 	def emit_html(self, **kwargs) -> str:
+		logging.warning(
+			f'Outputting MathML for {type(self).__name__} capital letter notation. MathML is not supported by Google Chrome.'
+		)
+		return f'<math>{self.emit_mathml(**kwargs)}</math>'
+
+	def emit_mathml(self, **kwargs) -> str:
 		lower, upper, terms = self._capital_notation_parts('mathml', **kwargs)
 		return f'''
-			<math><mstyle displaystyle="true"><mrow>
+			<mstyle displaystyle="true"><mrow>
 			<munderover>
 				<mo>&{self._get_tag()};</mo>
 				<mrow>{lower}</mrow><mrow>{upper}</mrow>
 			</munderover>
 			<mrow>{terms}</mrow>
-			</mrow></mstyle></math>
+			</mrow></mstyle>
 			'''
 
 	def emit_latex(self, **kwargs) -> str:
@@ -848,13 +854,13 @@ class Sqrt(Node):
 		return rf'sqrt[{self.join_children("", "jd", **kwargs)}]'
 
 
-#TODO: Properly nest Subscript and Superscript nodes, having both the base and "exponent"
+# TODO: Properly nest Subscript and Superscript nodes, having both the base and "exponent"
 
 class SuperscriptBrackets(Node):
 	def emit_html(self, **kwargs) -> str:
 		return f'<sup>{self.join_children("", "html", **kwargs)}</sup>'
 
-	def emit_mathml(self, **kwargs):
+	def emit_mathml(self, **kwargs) -> str:
 		return f'<msup><msrow></msrow><msrow>{self.join_children("", "mathml", **kwargs)}</msrow></mssup>'
 
 	def emit_latex(self, **kwargs) -> str:

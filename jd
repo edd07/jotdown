@@ -1,24 +1,39 @@
 #!/usr/bin/env python3
 import shutil
-from glob import glob
 
 from io import StringIO
+import logging
 
 import jotdown.globalv as globalv
+from jotdown.errors import LineNumberException, MissingTagException
 from jotdown.parser import parse
 
 import argparse
 import os
-import typing
 
 
 def write_file(infile: str, outfile: str, fformat: str='html', **kwargs) -> None:
 	with open(outfile, 'wb') as fout:
-		doc = parse(i + '\n' for i in globalv.read_with_encoding(infile).split('\n'))
-		doc.name = os.path.splitext(os.path.split(infile)[1])[0]
+		try:
+			doc = parse(i + '\n' for i in globalv.read_with_encoding(infile).split('\n'))
+			doc.name = os.path.splitext(os.path.split(infile)[1])[0]
 
-		fn = getattr(doc, 'emit_' + fformat)
-		fout.write(bytes(fn(**kwargs), 'utf-8'))  # Output is hardcoded to utf-8
+			fn = getattr(doc, 'emit_' + fformat)
+			fout.write(bytes(fn(**kwargs), 'utf-8'))  # Output is hardcoded to utf-8
+		except MissingTagException as e:
+			unpaired_name, unpaired_token, missing_token = e.unpaired_tag
+			if e.encountered_tag:
+				encountered_name, encountered_token, _ = e.encountered_tag
+				logging.error(f'in {infile} line {e.line_number}: {e} {unpaired_name} ("{missing_token}"), \
+but found {encountered_name} ("{encountered_token}") instead')
+			else:
+				logging.error(f'in {infile} line {e.line_number}: {e} {unpaired_name} ("{missing_token}")')
+		except LineNumberException as e:
+			logging.error(f'in {infile} line {e.line_number}: {e}')
+		except Exception as e:
+			logging.critical(e)
+			raise
+
 
 own_directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -29,24 +44,17 @@ argparser.add_argument('-f', '--format', default='html')
 argparser.add_argument('-s', '--style', default='solarized')
 argparser.add_argument('-r', '--md-refs', dest='citations', action='store_false', default=True)
 argparser.add_argument('-a', '--author', default=None)
+argparser.add_argument('-l', '--logging', default='WARNING')
 args = argparser.parse_args()
 
-style_ext = {
-	'html': '.css',
-	'rtf': '.rtf',
-	'latex': '.tex',
-	'debug': '',
-	'jd': '',
-}
+logging.basicConfig(level=args.logging, format='{levelname} {message}', style='{')
 
 # Use a built-in style file before attempting to load a custom one
-builtin_stylesheet = os.path.join(own_directory, 'styles', args.style + style_ext[args.format])
+builtin_stylesheet = os.path.join(own_directory, 'styles', args.style + globalv.style_ext[args.format])
 if os.path.isfile(builtin_stylesheet):
 	stylesheet = builtin_stylesheet
-	stylesheet_enc = 'utf-8'
 else:
 	stylesheet = args.style
-	stylesheet_enc = None
 
 # Parse standalone files
 if os.path.isfile(args.input):
@@ -57,10 +65,10 @@ if os.path.isfile(args.input):
 		fformat=args.format,
 		ref_style=args.citations,
 		stylesheet=stylesheet,
-		stylesheet_enc=stylesheet_enc
 	)
 
 # Parse whole directories
+# TODO: Factor out into another file
 elif os.path.isdir(args.input):
 	if not os.path.exists(args.output):
 		os.makedirs(args.output)

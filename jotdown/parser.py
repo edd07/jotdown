@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-from typing import Iterator, Iterable, Union, TextIO
+from typing import Iterator, Iterable, Union, TextIO, List
 
 from jotdown.lexer import *
 from jotdown.classes import *
+from jotdown.errors import LineNumberException, ContextException, MissingTagException
 import jotdown.globalv as globalv
 
 import sys
@@ -60,74 +61,71 @@ def parse_text(line_number: int, text: str) -> Sequence[Node]:
 
 	# Start the parser up with a dummy top-level node
 	# Keep track of the nested nodes and their type
-	stack = ['Dummy_OPEN']
-	node_stack = [Node()]
-	debug_text = text[:50] if len(text) <= 50 else text[:47] + '...'  # For error messages
+	stack: List[Tuple[str, Node]] = [('Dummy_OPEN', Node())]
 
 	for token, groups in get_text_tokens(line_number, text):
-		if '_OPEN' in token or '_CLOSE' in token:
+		if token.endswith('_OPEN'):
 			# General rule for NODE_OPEN or NODE_CLOSE tokens
-			node, node_type = token.split('_')
+			node_type, *node_subtypes, open_or_close = token.split('_')
+			node_class = globals()[node_type]
+			stack.append((token, node_class()))
 
-			if node_type == 'OPEN':
-				stack.append(token)
-				node_class = globals()[node]
-				node_stack.append(node_class())
-			else:
-				tos_token = stack[-1]
-				if '_' in tos_token:
-					tos_node, tos_type = tos_token.split('_')
-					if tos_node == node and tos_type == 'OPEN':
-						stack.pop()
-						closed_node = node_stack.pop()
-						node_stack[-1].children.append(closed_node)
-					else:
-						raise Exception("Expected closing tag for %s at line %d, found %s" % (
-							tos_token,
-							line_number,
-							token
-						))
+		elif token.endswith('_CLOSE'):
+			node_type, *node_subtypes, open_or_close = token.split('_')
+			tos_token, _ = stack[-1]
+			tos_node_type, *tos_subtypes, tos_open_or_close = tos_token.split('_')
+			if not tos_node_type == 'Dummy':
+				if (
+						tos_node_type == node_type and tos_subtypes == node_subtypes
+						and tos_open_or_close == 'OPEN'
+				):
+					_, closed_node = stack.pop()
+					stack[-1][1].children.append(closed_node)
 				else:
-					raise Exception("Malformed document at line %d: %s" % (line_number, text))
+					# TODO: point out the characters where the tag is opened
+					# TODO: this is never called. When opening a new node, check that one of the same
+					# type is not awaiting closure on the stack
+					raise MissingTagException(line_number, tos_token, encountered_tag=token)
+			else:
+				# Trying to close a tag that was never opened
+				raise MissingTagException(line_number, token, opening=True)
 
-		elif '_AMB' in token:
+		elif token.endswith('_AMB'):
 			# General rules for tags opened and closed by the same token
-			if token == stack[-1]:
+			if token == stack[-1][0]:
 				# Close the node
-				stack.pop()
-				closed_node = node_stack.pop()
-				node_stack[-1].children.append(closed_node)
+				_, closed_node = stack.pop()
+				stack[-1][1].children.append(closed_node)
 			else:
 				# Open a node
-				node, _ = token.split('_')
-				stack.append(token)
-				node_class = globals()[node]
-				node_stack.append(node_class())
+				node_type, *_, _ = token.split('_')
+				node_class = globals()[node_type]
+				stack.append((token, node_class()))
 
 		elif token == "Plaintext":
 			# Combine consecutive Plaintext nodes to reduce the overall number of Nodes created
-			tos_children = node_stack[-1].children
+			tos_children = stack[-1][1].children
 			if tos_children and isinstance(tos_children[-1], Plaintext):
 				tos_children[-1].text += groups[0]
 			else:
-				node_stack[-1].children.append(Plaintext(groups[0]))
+				stack[-1][1].children.append(Plaintext(groups[0]))
 
 		elif token == "Math":
-			node_stack[-1].children.append(parse_math(line_number, replace_math(groups[0])))
+			stack[-1][1].children.append(parse_math(line_number, replace_math(groups[0])))
 
 		elif token == "ImplicitLink":
-			node_stack[-1].children.append(ImplicitLink(TextNode(groups[0]), groups[0]))
+			stack[-1][1].children.append(ImplicitLink(TextNode(groups[0]), groups[0]))
 
 		elif token == "ImplicitEmail":
-			node_stack[-1].children.append(ImplicitLink(TextNode(groups[0]), f'mailto: {groups[0]}'))
+			stack[-1][1].children.append(ImplicitLink(TextNode(groups[0]), f'mailto: {groups[0]}'))
 
 		elif token == "Link":
 			text, href = groups
-			node_stack[-1].children.append(Link(Node(parse_text(line_number, text)), href))
+			stack[-1][1].children.append(Link(Node(parse_text(line_number, text)), href))
 
 		elif token == "ReferenceLink":
 			cited_text, ref_key = groups
-			node_stack[-1].children.append(ReferenceLink(Node(parse_text(line_number, cited_text)), ref_key))
+			stack[-1][1].children.append(ReferenceLink(Node(parse_text(line_number, cited_text)), ref_key))
 			globalv.references[ref_key] = None  # Save its place in the OrderedDict
 
 		elif token == "ReferenceDef":
@@ -140,11 +138,11 @@ def parse_text(line_number: int, text: str) -> Sequence[Node]:
 			alt, src, title = groups
 			alt = Node(parse_text(line_number, alt)) if alt else TextNode('')
 			title = Node(parse_text(line_number, title)) if title else TextNode('')
-			node_stack[-1].children.append(Content(alt, src, title))
+			stack[-1][1].children.append(Content(alt, src, title))
 
 	if len(stack) > 1:
-		raise Exception("Missing closing tag for %s at line %d: %s" % (stack[-1], line_number, debug_text))
-	return node_stack[0].children
+		raise MissingTagException(line_number, stack[-1][0])
+	return stack[0][1].children
 
 
 def parse_math(line_offset: int, text: str) -> Math:
