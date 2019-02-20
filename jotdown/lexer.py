@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import string
-from re import sub, compile, match
+from re import sub, compile, match, VERBOSE
 from typing import Iterable, Iterator, Generator, Tuple, Match, Optional, Union
 
 from jotdown.roman import from_roman, InvalidRomanNumeralError
 from jotdown.regex import *
-from jotdown.errors import ContextException
+from jotdown.errors import ContextException, MissingTagException
 
 from jotdown.globalv import re_flags, Block
 
@@ -40,7 +40,17 @@ text_tokens = [
 	(r'«', 'MathInline_OPEN'),
 	(r'»', 'MathInline_CLOSE'),
 
-	(r'!\[([^\]]*)\]\(([^\)\s]*)\s*(?:"([^"]*)"\s*)?\)', 'Image'),
+	(r'''
+		!
+		\[([^\]]*)\]  # String (not containing ']') surrounded by '[]': the alt text
+		\(
+			([^\)\s]*)  # String (not containing ')' or spaces): the src
+			\s*
+			(?:
+				"([^"]*)"\s*  # Quoted string with optional trailing space: the title text
+			)?  # Non-capturing group is optional
+		\)
+	''', 'Image'),
 	# TODO: Support links from other protocols
 	(r'(https?://\S+)', 'ImplicitLink'),
 	(r'\[([^\]]*)\]\(([^\)]*)\)', 'Link'),
@@ -87,7 +97,7 @@ disabling_tokens = {
 	'MathInline_OPEN': ('»', 'Math', 'MathInline_CLOSE')
 }
 
-text_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in text_tokens]
+text_tokens = [(compile(exp, flags=re_flags | VERBOSE), val) for (exp, val) in text_tokens]
 math_tokens = [(compile(exp, flags=re_flags), val) for (exp, val) in math_tokens]
 
 
@@ -127,15 +137,16 @@ def get_text_tokens(line_number: int, text: str) -> Iterator[Tuple[str, Tuple[st
 	"""
 	# TODO: Return also the source text for the token for sane error messages
 	disabled = False
+	enabling_token = ''
 	enabling_char = ''
 	disabled_token = ''
 	closing_token = ''
 	while text:
 
 		if disabled:
-			m = match(rf'([^{enabling_char}]*){enabling_char}', text)
+			m = match(rf'([^{enabling_char}]*){enabling_char}', text)  # Read up until enabling_char is found
 			if not m:
-				raise Exception(f'Expected "{enabling_char}" for unclosed tag at line {line_number}: {repr(text[:50])}')
+				raise MissingTagException(line_number, enabling_token)
 
 			yield disabled_token, m.groups()
 			yield closing_token, (enabling_char,)
@@ -151,6 +162,7 @@ def get_text_tokens(line_number: int, text: str) -> Iterator[Tuple[str, Tuple[st
 
 					if val in disabling_tokens:
 						disabled = True
+						enabling_token = val
 						enabling_char, disabled_token, closing_token = disabling_tokens[val]
 
 					yield val, m.groups()
@@ -216,6 +228,7 @@ def _block_is_underline_heading(block: Block) -> bool:
 
 def block_is_list(block: Block) -> bool:
 	# TODO: Warn if block is almost list?
+	# TODO: allow continuable list items (with an indent)
 	for line in block:
 		# Check if checklist
 		if re_checklistitem.match(line):
